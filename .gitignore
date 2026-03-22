@@ -1,0 +1,15 @@
+# macOS
+.DS_Store
+
+# Xcode
+xcuserdata/
+*.xcworkspace/
+
+# Python
+venv/
+
+# Duplicate model at repo root
+/silero_vad.onnx
+
+# Moonshine model files (large binaries — see MODELS.md for download instructions)
+ActiveSpeaker/models/

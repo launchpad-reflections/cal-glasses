@@ -15,16 +15,21 @@ struct ContentView: View {
                 audioProb: coordinator.audioProb,
                 mouthVariance: coordinator.mouthVariance
             )
+
+            TranscriptOverlayView(text: coordinator.transcriptText)
         }
         .onAppear {
             coordinator.configure(
                 audioProcessors: [SileroVADProcessor()],
-                videoProcessors: [MouthMovementProcessor()]
+                videoProcessors: [MouthMovementProcessor()],
+                transcriptionProvider: MoonshineTranscriber()
             )
+            coordinator.startTranscription()
             captureManager.coordinator = coordinator
             captureManager.start()
         }
         .onDisappear {
+            coordinator.stopTranscription()
             captureManager.stop()
         }
     }

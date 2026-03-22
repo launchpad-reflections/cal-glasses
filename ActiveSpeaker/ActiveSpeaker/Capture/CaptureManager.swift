@@ -22,6 +22,8 @@ final class CaptureManager: NSObject, ObservableObject {
 
     // MARK: - Public
 
+    private let sessionQueue = DispatchQueue(label: "com.activespeaker.session")
+
     func start() {
         requestPermissions { [weak self] granted in
             guard granted, let self else { return }
@@ -29,12 +31,16 @@ final class CaptureManager: NSObject, ObservableObject {
             self.configureVideoCapture()
             self.configureAudioCapture()
             self.beginPerformanceActivity()
-            self.captureSession.startRunning()
+            self.sessionQueue.async {
+                self.captureSession.startRunning()
+            }
         }
     }
 
     func stop() {
-        captureSession.stopRunning()
+        sessionQueue.async { [self] in
+            captureSession.stopRunning()
+        }
         audioEngine?.stop()
         audioEngine?.inputNode.removeTap(onBus: 0)
         audioEngine = nil
@@ -86,7 +92,7 @@ final class CaptureManager: NSObject, ObservableObject {
 
     private func configureVideoCapture() {
         captureSession.beginConfiguration()
-        captureSession.sessionPreset = .medium
+        captureSession.sessionPreset = .high
 
         // Front camera
         guard let camera = AVCaptureDevice.default(
@@ -142,6 +148,9 @@ final class CaptureManager: NSObject, ObservableObject {
         let engine = AVAudioEngine()
         let inputNode = engine.inputNode
 
+        // Use the hardware format for the tap — passing a different sample rate crashes
+        let hwFormat = inputNode.outputFormat(forBus: 0)
+
         // Target format: 16kHz mono Float32 — matches Silero VAD requirements
         guard let targetFormat = AVAudioFormat(
             commonFormat: .pcmFormatFloat32,
@@ -153,10 +162,31 @@ final class CaptureManager: NSObject, ObservableObject {
             return
         }
 
-        // Install tap — AVAudioEngine handles resampling automatically
-        inputNode.installTap(onBus: 0, bufferSize: 512, format: targetFormat) {
+        guard let converter = AVAudioConverter(from: hwFormat, to: targetFormat) else {
+            print("[CaptureManager] Failed to create audio converter")
+            return
+        }
+
+        // Install tap at hardware rate, then convert to 16kHz mono
+        inputNode.installTap(onBus: 0, bufferSize: 1024, format: hwFormat) {
             [weak self] buffer, _ in
-            self?.coordinator?.processAudio(buffer)
+            // Calculate the output frame count based on the rate ratio
+            let ratio = 16000.0 / hwFormat.sampleRate
+            let outputFrameCount = AVAudioFrameCount(Double(buffer.frameLength) * ratio)
+            guard let outputBuffer = AVAudioPCMBuffer(
+                pcmFormat: targetFormat,
+                frameCapacity: outputFrameCount
+            ) else { return }
+
+            var error: NSError?
+            converter.convert(to: outputBuffer, error: &error) { _, outStatus in
+                outStatus.pointee = .haveData
+                return buffer
+            }
+
+            if error == nil, outputBuffer.frameLength > 0 {
+                self?.coordinator?.processAudio(outputBuffer)
+            }
         }
 
         do {

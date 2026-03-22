@@ -3,26 +3,37 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 56;
+	objectVersion = 70;
 	objects = {
 
 /* Begin PBXBuildFile section */
-		A10000010000000000000001 /* ActiveSpeakerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000001; };
-		A10000020000000000000002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000020000000000000002; };
-		A10000030000000000000003 /* StatusOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000030000000000000003; };
-		A10000040000000000000004 /* CaptureManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000040000000000000004; };
-		A10000050000000000000005 /* CameraPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000050000000000000005; };
-		A10000060000000000000006 /* AudioProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000060000000000000006; };
-		A10000070000000000000007 /* VideoProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000070000000000000007; };
-		A10000080000000000000008 /* FusionEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000080000000000000008; };
-		A10000090000000000000009 /* PipelineCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000090000000000000009; };
-		A1000010000000000000000A /* SileroVADProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000010000000000000000A; };
-		A1000011000000000000000B /* MouthMovementProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000011000000000000000B; };
-		A1000012000000000000000C /* SpeakerState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000012000000000000000C; };
-		A1000013000000000000000D /* RollingBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000013000000000000000D; };
+		7171E3742F6F8F7B0034B4AA /* onnxruntime in Frameworks */ = {isa = PBXBuildFile; productRef = 7171E3732F6F8F7B0034B4AA /* onnxruntime */; };
+		7171E3762F6F8F7B0034B4AA /* onnxruntime_extensions in Frameworks */ = {isa = PBXBuildFile; productRef = 7171E3752F6F8F7B0034B4AA /* onnxruntime_extensions */; };
+		7171E3782F6F8FF10034B4AA /* silero_vad.onnx in Resources */ = {isa = PBXBuildFile; fileRef = 7171E3772F6F8FF10034B4AA /* silero_vad.onnx */; };
+		7171E3802F6FA7DC0034B4AA /* MoonshineVoice in Frameworks */ = {isa = PBXBuildFile; productRef = 7171E37F2F6FA7DC0034B4AA /* MoonshineVoice */; };
+		7171E3822F6FA8A70034B4AA /* TranscriptionProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7171E3812F6FA8A70034B4AA /* TranscriptionProvider.swift */; };
+		7171E3842F6FA8BE0034B4AA /* MoonshineTranscriber.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7171E3832F6FA8BE0034B4AA /* MoonshineTranscriber.swift */; };
+		7171E3862F6FA8D40034B4AA /* TranscriptOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7171E3852F6FA8D40034B4AA /* TranscriptOverlayView.swift */; };
+		A10000010000000000000001 /* ActiveSpeakerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000001 /* ActiveSpeakerApp.swift */; };
+		A10000020000000000000002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000020000000000000002 /* ContentView.swift */; };
+		A10000030000000000000003 /* StatusOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000030000000000000003 /* StatusOverlayView.swift */; };
+		A10000040000000000000004 /* CaptureManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000040000000000000004 /* CaptureManager.swift */; };
+		A10000050000000000000005 /* CameraPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000050000000000000005 /* CameraPreviewView.swift */; };
+		A10000060000000000000006 /* AudioProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000060000000000000006 /* AudioProcessor.swift */; };
+		A10000070000000000000007 /* VideoProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000070000000000000007 /* VideoProcessor.swift */; };
+		A10000080000000000000008 /* FusionEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000080000000000000008 /* FusionEngine.swift */; };
+		A10000090000000000000009 /* PipelineCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000090000000000000009 /* PipelineCoordinator.swift */; };
+		A1000010000000000000000A /* SileroVADProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000010000000000000000A /* SileroVADProcessor.swift */; };
+		A1000011000000000000000B /* MouthMovementProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000011000000000000000B /* MouthMovementProcessor.swift */; };
+		A1000012000000000000000C /* SpeakerState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000012000000000000000C /* SpeakerState.swift */; };
+		A1000013000000000000000D /* RollingBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000013000000000000000D /* RollingBuffer.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		7171E3772F6F8FF10034B4AA /* silero_vad.onnx */ = {isa = PBXFileReference; lastKnownFileType = file; path = silero_vad.onnx; sourceTree = "<group>"; };
+		7171E3812F6FA8A70034B4AA /* TranscriptionProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptionProvider.swift; sourceTree = "<group>"; };
+		7171E3832F6FA8BE0034B4AA /* MoonshineTranscriber.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoonshineTranscriber.swift; sourceTree = "<group>"; };
+		7171E3852F6FA8D40034B4AA /* TranscriptOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptOverlayView.swift; sourceTree = "<group>"; };
 		A20000010000000000000001 /* ActiveSpeakerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveSpeakerApp.swift; sourceTree = "<group>"; };
 		A20000020000000000000002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		A20000030000000000000003 /* StatusOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusOverlayView.swift; sourceTree = "<group>"; };
@@ -40,11 +51,18 @@
 		A30000010000000000000001 /* ActiveSpeaker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ActiveSpeaker.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		7171E38F2F6FA9900034B4AA /* models */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = models; sourceTree = "<group>"; };
+/* End PBXFileSystemSynchronizedRootGroup section */
+
 /* Begin PBXFrameworksBuildPhase section */
 		A40000010000000000000001 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7171E3762F6F8F7B0034B4AA /* onnxruntime_extensions in Frameworks */,
+				7171E3742F6F8F7B0034B4AA /* onnxruntime in Frameworks */,
+				7171E3802F6FA7DC0034B4AA /* MoonshineVoice in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -56,6 +74,8 @@
 			children = (
 				A50000020000000000000002 /* ActiveSpeaker */,
 				A50000090000000000000009 /* Products */,
+				7171E3772F6F8FF10034B4AA /* silero_vad.onnx */,
+				7171E38F2F6FA9900034B4AA /* models */,
 			);
 			sourceTree = "<group>";
 		};
@@ -98,6 +118,7 @@
 				A20000070000000000000007 /* VideoProcessor.swift */,
 				A20000080000000000000008 /* FusionEngine.swift */,
 				A20000090000000000000009 /* PipelineCoordinator.swift */,
+				7171E3812F6FA8A70034B4AA /* TranscriptionProvider.swift */,
 			);
 			path = Pipeline;
 			sourceTree = "<group>";
@@ -107,6 +128,7 @@
 			children = (
 				A2000010000000000000000A /* SileroVADProcessor.swift */,
 				A2000011000000000000000B /* MouthMovementProcessor.swift */,
+				7171E3832F6FA8BE0034B4AA /* MoonshineTranscriber.swift */,
 			);
 			path = Processors;
 			sourceTree = "<group>";
@@ -124,6 +146,7 @@
 			children = (
 				A20000020000000000000002 /* ContentView.swift */,
 				A20000030000000000000003 /* StatusOverlayView.swift */,
+				7171E3852F6FA8D40034B4AA /* TranscriptOverlayView.swift */,
 			);
 			path = UI;
 			sourceTree = "<group>";
@@ -159,7 +182,15 @@
 			);
 			dependencies = (
 			);
+			fileSystemSynchronizedGroups = (
+				7171E38F2F6FA9900034B4AA /* models */,
+			);
 			name = ActiveSpeaker;
+			packageProductDependencies = (
+				7171E3732F6F8F7B0034B4AA /* onnxruntime */,
+				7171E3752F6F8F7B0034B4AA /* onnxruntime_extensions */,
+				7171E37F2F6FA7DC0034B4AA /* MoonshineVoice */,
+			);
 			productName = ActiveSpeaker;
 			productReference = A30000010000000000000001 /* ActiveSpeaker.app */;
 			productType = "com.apple.product-type.application";
@@ -188,6 +219,10 @@
 				Base,
 			);
 			mainGroup = A50000010000000000000001;
+			packageReferences = (
+				7171E3722F6F8F7B0034B4AA /* XCRemoteSwiftPackageReference "onnxruntime-swift-package-manager" */,
+				7171E37E2F6FA7DC0034B4AA /* XCRemoteSwiftPackageReference "moonshine-swift" */,
+			);
 			productRefGroup = A50000090000000000000009 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -202,6 +237,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7171E3782F6F8FF10034B4AA /* silero_vad.onnx in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -224,7 +260,10 @@
 				A1000010000000000000000A /* SileroVADProcessor.swift in Sources */,
 				A1000011000000000000000B /* MouthMovementProcessor.swift in Sources */,
 				A1000012000000000000000C /* SpeakerState.swift in Sources */,
+				7171E3842F6FA8BE0034B4AA /* MoonshineTranscriber.swift in Sources */,
+				7171E3862F6FA8D40034B4AA /* TranscriptOverlayView.swift in Sources */,
 				A1000013000000000000000D /* RollingBuffer.swift in Sources */,
+				7171E3822F6FA8A70034B4AA /* TranscriptionProvider.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -355,6 +394,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2826M89H2N;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ActiveSpeaker/App/Info.plist;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Camera access is needed to detect mouth movement for active speaker detection.";
@@ -363,7 +403,7 @@
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -373,7 +413,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -384,6 +424,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2826M89H2N;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ActiveSpeaker/App/Info.plist;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Camera access is needed to detect mouth movement for active speaker detection.";
@@ -392,7 +433,7 @@
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -402,7 +443,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};
@@ -429,6 +470,42 @@
 		};
 /* End XCConfigurationList section */
 
+/* Begin XCRemoteSwiftPackageReference section */
+		7171E3722F6F8F7B0034B4AA /* XCRemoteSwiftPackageReference "onnxruntime-swift-package-manager" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/microsoft/onnxruntime-swift-package-manager";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.24.2;
+			};
+		};
+		7171E37E2F6FA7DC0034B4AA /* XCRemoteSwiftPackageReference "moonshine-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/moonshine-ai/moonshine-swift/";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		7171E3732F6F8F7B0034B4AA /* onnxruntime */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7171E3722F6F8F7B0034B4AA /* XCRemoteSwiftPackageReference "onnxruntime-swift-package-manager" */;
+			productName = onnxruntime;
+		};
+		7171E3752F6F8F7B0034B4AA /* onnxruntime_extensions */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7171E3722F6F8F7B0034B4AA /* XCRemoteSwiftPackageReference "onnxruntime-swift-package-manager" */;
+			productName = onnxruntime_extensions;
+		};
+		7171E37F2F6FA7DC0034B4AA /* MoonshineVoice */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7171E37E2F6FA7DC0034B4AA /* XCRemoteSwiftPackageReference "moonshine-swift" */;
+			productName = MoonshineVoice;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = A90000010000000000000001 /* Project object */;
 }
