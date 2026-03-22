@@ -1,7 +1,7 @@
 import AVFoundation
-import CoreML
+import onnxruntime_objc
 
-/// Audio processor that runs Silero VAD via CoreML.
+/// Audio processor that runs Silero VAD via ONNX Runtime.
 ///
 /// The Silero model is a stateful RNN. Each inference receives:
 /// - input: [1, 576] = 64 context samples + 512 new samples
@@ -18,36 +18,26 @@ final class SileroVADProcessor: AudioProcessor {
     private let chunkSize: Int = 512
     private let contextSize: Int = 64
 
-    // CoreML model
-    private var model: MLModel?
+    // ONNX Runtime session
+    private var session: ORTSession?
 
     // Stateful inference
-    private var state: MLMultiArray
+    private var state: [Float]
     private var context: [Float]
-
-    // Pre-allocated input arrays (reused each inference)
-    private let inputArray: MLMultiArray
-    private let srArray: MLMultiArray
 
     // Accumulation buffer for when tap delivers non-512 buffers
     private var accumulator: [Float] = []
 
     init() {
-        // Pre-allocate arrays
-        state = Self.makeStateArray()
+        state = [Float](repeating: 0, count: 2 * 1 * 128)
         context = [Float](repeating: 0, count: 64)
-
-        inputArray = try! MLMultiArray(shape: [1, 576], dataType: .float32)
-        srArray = try! MLMultiArray(shape: [1], dataType: .int32)
-        srArray[0] = NSNumber(value: 16000)
-
         loadModel()
     }
 
     // MARK: - AudioProcessor
 
     func process(buffer: AVAudioPCMBuffer) -> Float {
-        guard let model else { return 0.0 }
+        guard let session else { return 0.0 }
         guard let channelData = buffer.floatChannelData else { return 0.0 }
 
         let frameCount = Int(buffer.frameLength)
@@ -60,14 +50,14 @@ final class SileroVADProcessor: AudioProcessor {
         while accumulator.count >= chunkSize {
             let chunk = Array(accumulator.prefix(chunkSize))
             accumulator.removeFirst(chunkSize)
-            lastProb = runInference(chunk: chunk, model: model)
+            lastProb = runInference(chunk: chunk, session: session)
         }
 
         return lastProb
     }
 
     func reset() {
-        state = Self.makeStateArray()
+        state = [Float](repeating: 0, count: 2 * 1 * 128)
         context = [Float](repeating: 0, count: contextSize)
         accumulator.removeAll()
     }
@@ -75,68 +65,77 @@ final class SileroVADProcessor: AudioProcessor {
     // MARK: - Model loading
 
     private func loadModel() {
-        let config = MLModelConfiguration()
-        config.computeUnits = .cpuOnly
-
-        // Look for compiled model in bundle
-        guard let modelURL = Bundle.main.url(forResource: "SileroVAD", withExtension: "mlmodelc")
-                ?? Bundle.main.url(forResource: "SileroVAD", withExtension: "mlpackage") else {
-            print("[SileroVAD] Model not found in bundle — VAD disabled")
+        guard let modelPath = Bundle.main.path(forResource: "silero_vad", ofType: "onnx") else {
+            print("[SileroVAD] silero_vad.onnx not found in bundle — VAD disabled")
             return
         }
 
         do {
-            model = try MLModel(contentsOf: modelURL, configuration: config)
+            let env = try ORTEnv(loggingLevel: .warning)
+            let options = try ORTSessionOptions()
+            try options.setIntraOpNumThreads(1)
+            session = try ORTSession(env: env, modelPath: modelPath, sessionOptions: options)
         } catch {
-            print("[SileroVAD] Failed to load model: \(error)")
+            print("[SileroVAD] Failed to create ONNX Runtime session: \(error)")
         }
     }
 
     // MARK: - Inference
 
-    private func runInference(chunk: [Float], model: MLModel) -> Float {
-        // Fill input: [context (64) | chunk (512)] = 576 samples
-        let inputPtr = inputArray.dataPointer.bindMemory(to: Float.self, capacity: 576)
-        for i in 0..<contextSize {
-            inputPtr[i] = context[i]
-        }
-        for i in 0..<chunkSize {
-            inputPtr[contextSize + i] = chunk[i]
-        }
+    private func runInference(chunk: [Float], session: ORTSession) -> Float {
+        do {
+            // Build input: [context (64) | chunk (512)] = 576 samples
+            var inputData = context + chunk
 
-        let provider = try? MLDictionaryFeatureProvider(dictionary: [
-            "input": MLFeatureValue(multiArray: inputArray),
-            "state": MLFeatureValue(multiArray: state),
-            "sr": MLFeatureValue(multiArray: srArray),
-        ])
+            let inputTensor = try ORTValue(
+                tensorData: NSMutableData(bytes: &inputData, length: inputData.count * MemoryLayout<Float>.size),
+                elementType: .float,
+                shape: [1, 576]
+            )
 
-        guard let provider,
-              let prediction = try? model.prediction(from: provider) else {
+            let stateTensor = try ORTValue(
+                tensorData: NSMutableData(bytes: &state, length: state.count * MemoryLayout<Float>.size),
+                elementType: .float,
+                shape: [2, 1, 128]
+            )
+
+            var srData: [Int64] = [Int64(sampleRate)]
+            let srTensor = try ORTValue(
+                tensorData: NSMutableData(bytes: &srData, length: srData.count * MemoryLayout<Int64>.size),
+                elementType: .int64,
+                shape: [1]
+            )
+
+            let outputs = try session.run(
+                withInputs: ["input": inputTensor, "state": stateTensor, "sr": srTensor],
+                outputNames: ["output", "stateOut"],
+                runOptions: nil
+            )
+
+            // Update state from stateOut
+            if let stateOut = outputs["stateOut"] {
+                let stateData = try stateOut.tensorData() as Data
+                state = stateData.withUnsafeBytes { buf in
+                    Array(buf.bindMemory(to: Float.self))
+                }
+            }
+
+            // Update context — last 64 samples of the chunk
+            context = Array(chunk.suffix(contextSize))
+
+            // Extract probability
+            if let output = outputs["output"] {
+                let outputData = try output.tensorData() as Data
+                let prob = outputData.withUnsafeBytes { buf in
+                    buf.bindMemory(to: Float.self).first ?? 0.0
+                }
+                return prob
+            }
+
+            return 0.0
+        } catch {
+            print("[SileroVAD] Inference error: \(error)")
             return 0.0
         }
-
-        // Update state
-        if let newState = prediction.featureValue(for: "stateOut")?.multiArrayValue {
-            state = newState
-        }
-
-        // Update context — last 64 samples of the chunk
-        context = Array(chunk.suffix(contextSize))
-
-        // Extract probability
-        if let output = prediction.featureValue(for: "output")?.multiArrayValue {
-            return output[0].floatValue
-        }
-
-        return 0.0
-    }
-
-    // MARK: - Helpers
-
-    private static func makeStateArray() -> MLMultiArray {
-        let arr = try! MLMultiArray(shape: [2, 1, 128], dataType: .float32)
-        let ptr = arr.dataPointer.bindMemory(to: Float.self, capacity: 256)
-        for i in 0..<256 { ptr[i] = 0.0 }
-        return arr
     }
 }
