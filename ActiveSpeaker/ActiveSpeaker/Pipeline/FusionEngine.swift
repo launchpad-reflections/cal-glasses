@@ -5,7 +5,7 @@ import Foundation
 /// Pure value type with no side effects — easy to unit test and swap.
 struct FusionEngine {
     var audioThreshold: Float = 0.5
-    var mouthVarianceThreshold: Float = 0.0005
+    var mouthVarianceThreshold: Float = 0.00001
 
     func fuse(audioProb: Float, mouthVariance: Float) -> SpeakerState {
         let audioActive = audioProb > audioThreshold

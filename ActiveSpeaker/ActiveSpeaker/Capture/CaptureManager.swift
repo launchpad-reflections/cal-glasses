@@ -7,6 +7,10 @@ final class CaptureManager: NSObject, ObservableObject {
 
     let captureSession = AVCaptureSession()
 
+    /// Portrait aspect ratio (width/height) of the captured video.
+    /// Computed from the camera's active format after configuration.
+    @Published private(set) var videoPortraitAspectRatio: CGFloat = 3.0 / 4.0
+
     private let videoProcessingQueue = DispatchQueue(
         label: "com.activespeaker.video",
         qos: .userInteractive
@@ -20,11 +24,18 @@ final class CaptureManager: NSObject, ObservableObject {
     private var performanceActivity: NSObjectProtocol?
     weak var coordinator: PipelineCoordinator?
 
+    /// Most recent pixel buffer from the camera, for enrollment snapshot capture.
+    /// Written on the video processing queue, read from enrollment UI.
+    private(set) var latestPixelBuffer: CVPixelBuffer?
+
     // MARK: - Public
 
     private let sessionQueue = DispatchQueue(label: "com.activespeaker.session")
+    private var isConfigured = false
 
     func start() {
+        guard !isConfigured else { return }
+        isConfigured = true
         requestPermissions { [weak self] granted in
             guard granted, let self else { return }
             self.configureAudioSession()
@@ -134,9 +145,21 @@ final class CaptureManager: NSObject, ObservableObject {
             captureSession.addOutput(videoOutput)
         }
 
-        // Mirror front camera
+        // Do NOT mirror the video data output. The preview layer applies
+        // rotate-then-mirror, but mirroring the buffer gives mirror-then-rotate
+        // which is a different transform. Instead, pass the raw buffer to Vision
+        // with .leftMirrored orientation, which applies the same rotate+mirror
+        // as the preview layer.
         if let connection = videoOutput.connection(with: .video) {
-            connection.isVideoMirrored = true
+            connection.automaticallyAdjustsVideoMirroring = false
+            connection.isVideoMirrored = false
+        }
+
+        // Compute portrait aspect ratio from sensor dimensions (landscape → portrait)
+        let dims = CMVideoFormatDescriptionGetDimensions(camera.activeFormat.formatDescription)
+        let portraitAR = CGFloat(dims.height) / CGFloat(dims.width)
+        DispatchQueue.main.async {
+            self.videoPortraitAspectRatio = portraitAR
         }
 
         captureSession.commitConfiguration()
@@ -218,6 +241,7 @@ extension CaptureManager: AVCaptureVideoDataOutputSampleBufferDelegate {
         from connection: AVCaptureConnection
     ) {
         guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
+        latestPixelBuffer = pixelBuffer
         coordinator?.processVideo(
             pixelBuffer: pixelBuffer,
             orientation: .leftMirrored

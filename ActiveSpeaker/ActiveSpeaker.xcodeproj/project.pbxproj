@@ -27,6 +27,13 @@
 		A1000011000000000000000B /* MouthMovementProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000011000000000000000B /* MouthMovementProcessor.swift */; };
 		A1000012000000000000000C /* SpeakerState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000012000000000000000C /* SpeakerState.swift */; };
 		A1000013000000000000000D /* RollingBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000013000000000000000D /* RollingBuffer.swift */; };
+		B10000010000000000000001 /* IdentifiedFace.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000010000000000000001 /* IdentifiedFace.swift */; };
+		B10000020000000000000002 /* FaceGallery.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000020000000000000002 /* FaceGallery.swift */; };
+		B10000030000000000000003 /* FaceDetectionProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000030000000000000003 /* FaceDetectionProvider.swift */; };
+		B10000040000000000000004 /* FaceEmbeddingProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000040000000000000004 /* FaceEmbeddingProcessor.swift */; };
+		B10000050000000000000005 /* FaceOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000050000000000000005 /* FaceOverlayView.swift */; };
+		B10000060000000000000006 /* EnrollmentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000060000000000000006 /* EnrollmentView.swift */; };
+		B10000070000000000000007 /* MobileFaceNet.mlpackage in Sources */ = {isa = PBXBuildFile; fileRef = B20000070000000000000007 /* MobileFaceNet.mlpackage */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -49,6 +56,13 @@
 		A2000013000000000000000D /* RollingBuffer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RollingBuffer.swift; sourceTree = "<group>"; };
 		A2000014000000000000000E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A30000010000000000000001 /* ActiveSpeaker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ActiveSpeaker.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B20000010000000000000001 /* IdentifiedFace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IdentifiedFace.swift; sourceTree = "<group>"; };
+		B20000020000000000000002 /* FaceGallery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceGallery.swift; sourceTree = "<group>"; };
+		B20000030000000000000003 /* FaceDetectionProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceDetectionProvider.swift; sourceTree = "<group>"; };
+		B20000040000000000000004 /* FaceEmbeddingProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceEmbeddingProcessor.swift; sourceTree = "<group>"; };
+		B20000050000000000000005 /* FaceOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceOverlayView.swift; sourceTree = "<group>"; };
+		B20000060000000000000006 /* EnrollmentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnrollmentView.swift; sourceTree = "<group>"; };
+		B20000070000000000000007 /* MobileFaceNet.mlpackage */ = {isa = PBXFileReference; lastKnownFileType = folder.mlpackage; path = MobileFaceNet.mlpackage; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -76,6 +90,7 @@
 				A50000090000000000000009 /* Products */,
 				7171E3772F6F8FF10034B4AA /* silero_vad.onnx */,
 				7171E38F2F6FA9900034B4AA /* models */,
+				B20000070000000000000007 /* MobileFaceNet.mlpackage */,
 			);
 			sourceTree = "<group>";
 		};
@@ -119,6 +134,7 @@
 				A20000080000000000000008 /* FusionEngine.swift */,
 				A20000090000000000000009 /* PipelineCoordinator.swift */,
 				7171E3812F6FA8A70034B4AA /* TranscriptionProvider.swift */,
+				B20000030000000000000003 /* FaceDetectionProvider.swift */,
 			);
 			path = Pipeline;
 			sourceTree = "<group>";
@@ -129,6 +145,7 @@
 				A2000010000000000000000A /* SileroVADProcessor.swift */,
 				A2000011000000000000000B /* MouthMovementProcessor.swift */,
 				7171E3832F6FA8BE0034B4AA /* MoonshineTranscriber.swift */,
+				B20000040000000000000004 /* FaceEmbeddingProcessor.swift */,
 			);
 			path = Processors;
 			sourceTree = "<group>";
@@ -137,6 +154,8 @@
 			isa = PBXGroup;
 			children = (
 				A2000012000000000000000C /* SpeakerState.swift */,
+				B20000010000000000000001 /* IdentifiedFace.swift */,
+				B20000020000000000000002 /* FaceGallery.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -147,6 +166,8 @@
 				A20000020000000000000002 /* ContentView.swift */,
 				A20000030000000000000003 /* StatusOverlayView.swift */,
 				7171E3852F6FA8D40034B4AA /* TranscriptOverlayView.swift */,
+				B20000050000000000000005 /* FaceOverlayView.swift */,
+				B20000060000000000000006 /* EnrollmentView.swift */,
 			);
 			path = UI;
 			sourceTree = "<group>";
@@ -264,6 +285,13 @@
 				7171E3862F6FA8D40034B4AA /* TranscriptOverlayView.swift in Sources */,
 				A1000013000000000000000D /* RollingBuffer.swift in Sources */,
 				7171E3822F6FA8A70034B4AA /* TranscriptionProvider.swift in Sources */,
+				B10000010000000000000001 /* IdentifiedFace.swift in Sources */,
+				B10000020000000000000002 /* FaceGallery.swift in Sources */,
+				B10000030000000000000003 /* FaceDetectionProvider.swift in Sources */,
+				B10000040000000000000004 /* FaceEmbeddingProcessor.swift in Sources */,
+				B10000050000000000000005 /* FaceOverlayView.swift in Sources */,
+				B10000060000000000000006 /* EnrollmentView.swift in Sources */,
+				B10000070000000000000007 /* MobileFaceNet.mlpackage in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -322,7 +350,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -378,7 +406,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;

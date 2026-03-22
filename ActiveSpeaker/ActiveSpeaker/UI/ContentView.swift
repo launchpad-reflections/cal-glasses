@@ -2,13 +2,18 @@ import SwiftUI
 
 struct ContentView: View {
 
-    @StateObject private var coordinator = PipelineCoordinator()
-    @StateObject private var captureManager = CaptureManager()
+    @ObservedObject var coordinator: PipelineCoordinator
+    @ObservedObject var captureManager: CaptureManager
+    @ObservedObject var gallery: FaceGallery
 
     var body: some View {
         ZStack {
-            CameraPreviewView(session: captureManager.captureSession)
-                .ignoresSafeArea()
+            CameraPreviewView(
+                session: captureManager.captureSession,
+                faces: coordinator.identifiedFaces,
+                videoAspectRatio: captureManager.videoPortraitAspectRatio
+            )
+            .ignoresSafeArea()
 
             StatusOverlayView(
                 state: coordinator.speakerState,
@@ -17,20 +22,6 @@ struct ContentView: View {
             )
 
             TranscriptOverlayView(text: coordinator.transcriptText)
-        }
-        .onAppear {
-            coordinator.configure(
-                audioProcessors: [SileroVADProcessor()],
-                videoProcessors: [MouthMovementProcessor()],
-                transcriptionProvider: MoonshineTranscriber()
-            )
-            coordinator.startTranscription()
-            captureManager.coordinator = coordinator
-            captureManager.start()
-        }
-        .onDisappear {
-            coordinator.stopTranscription()
-            captureManager.stop()
         }
     }
 }

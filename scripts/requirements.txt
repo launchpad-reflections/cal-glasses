@@ -1,0 +1,5 @@
+numpy<2
+onnx
+onnx2torch
+coremltools>=7.0
+torch>=2.0,<2.3

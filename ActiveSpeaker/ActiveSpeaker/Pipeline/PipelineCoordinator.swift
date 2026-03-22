@@ -6,8 +6,9 @@ import os
 /// processors, fuses results, and publishes state to the UI.
 ///
 /// Thread safety model:
-/// - `audioProcessors` / `videoProcessors` / `transcriptionProvider` are set once
-///   via `configure()` before any processing starts, then only read.
+/// - `audioProcessors` / `mouthMovementProcessor` / `faceDetectionProvider` /
+///   `faceEmbeddingProcessor` / `transcriptionProvider` are set once via
+///   `configure()` before any processing starts, then only read.
 /// - `_lockedAudioProb` / `_lockedMouthVar` are written from processing queues and read
 ///   cross-queue, protected by `os_unfair_lock`.
 /// - Published properties are updated exclusively on the main thread.
@@ -20,12 +21,15 @@ final class PipelineCoordinator: ObservableObject {
     @Published private(set) var audioProb: Float = 0.0
     @Published private(set) var mouthVariance: Float = 0.0
     @Published private(set) var transcriptText: String = ""
+    @Published private(set) var identifiedFaces: [IdentifiedFace] = []
 
     // MARK: - Processors (set once before processing starts)
 
     private var audioProcessors: [AudioProcessor] = []
-    private var videoProcessors: [VideoProcessor] = []
+    private var mouthMovementProcessor: MouthMovementProcessor?
     private var transcriptionProvider: TranscriptionProvider?
+    private var faceDetectionProvider: FaceDetectionProvider?
+    private var faceEmbeddingProcessor: FaceEmbeddingProcessor?
     private let fusionEngine = FusionEngine()
 
     // MARK: - Transcription queue (separate from audio to avoid blocking VAD)
@@ -46,12 +50,16 @@ final class PipelineCoordinator: ObservableObject {
     /// Must be called on the main thread before starting capture.
     func configure(
         audioProcessors: [AudioProcessor],
-        videoProcessors: [VideoProcessor],
-        transcriptionProvider: TranscriptionProvider? = nil
+        mouthMovementProcessor: MouthMovementProcessor? = nil,
+        transcriptionProvider: TranscriptionProvider? = nil,
+        faceDetectionProvider: FaceDetectionProvider? = nil,
+        faceEmbeddingProcessor: FaceEmbeddingProcessor? = nil
     ) {
         self.audioProcessors = audioProcessors
-        self.videoProcessors = videoProcessors
+        self.mouthMovementProcessor = mouthMovementProcessor
         self.transcriptionProvider = transcriptionProvider
+        self.faceDetectionProvider = faceDetectionProvider
+        self.faceEmbeddingProcessor = faceEmbeddingProcessor
 
         transcriptionProvider?.onTranscriptUpdate = { [weak self] text in
             DispatchQueue.main.async {
@@ -104,11 +112,24 @@ final class PipelineCoordinator: ObservableObject {
     }
 
     func processVideo(pixelBuffer: CVPixelBuffer, orientation: CGImagePropertyOrientation) {
-        var mouthVar: Float = 0.0
-        for processor in videoProcessors {
-            mouthVar = processor.process(pixelBuffer: pixelBuffer, orientation: orientation)
+        // 1. Shared face detection (one pass for all consumers)
+        let faces = faceDetectionProvider?.detectFaces(
+            in: pixelBuffer, orientation: orientation
+        ) ?? []
+
+        // 2. Mouth movement from detected faces
+        let mouthVar = mouthMovementProcessor?.process(faces: faces) ?? 0.0
+
+        // 3. Face identity matching (throttled internally)
+        // TODO: re-enable embedding search
+        // let identified = faceEmbeddingProcessor?.identify(
+        //     faces: faces, in: pixelBuffer
+        // ) ?? []
+        let identified = faces.map {
+            IdentifiedFace(name: "Detected", boundingBox: $0.boundingBox, confidence: 0)
         }
 
+        // 4. Cross-queue state update
         os_unfair_lock_lock(&_lock)
         _lockedMouthVar = mouthVar
         let ap = _lockedAudioProb
@@ -119,6 +140,7 @@ final class PipelineCoordinator: ObservableObject {
         DispatchQueue.main.async { [weak self] in
             self?.mouthVariance = mouthVar
             self?.speakerState = state
+            self?.identifiedFaces = identified
         }
     }
 
