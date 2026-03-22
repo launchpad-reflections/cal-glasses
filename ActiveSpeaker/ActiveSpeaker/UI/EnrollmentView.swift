@@ -22,8 +22,10 @@ struct EnrollmentView: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
-                // Camera preview
-                CameraPreviewView(session: captureManager.captureSession)
+                // Snapshot-based preview — avoids creating a second
+                // AVCaptureVideoPreviewLayer which would freeze the app
+                // and cause a black screen on the Camera tab.
+                SnapshotPreviewView(captureManager: captureManager)
                     .frame(height: 300)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                     .padding(.horizontal)
@@ -89,7 +91,7 @@ struct EnrollmentView: View {
         DispatchQueue.global(qos: .userInitiated).async {
             let faces = detectionProvider.detectFaces(
                 in: pixelBuffer,
-                orientation: .right
+                orientation: .leftMirrored
             )
 
             if faces.isEmpty {

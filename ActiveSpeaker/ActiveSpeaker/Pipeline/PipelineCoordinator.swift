@@ -120,13 +120,11 @@ final class PipelineCoordinator: ObservableObject {
         // 2. Mouth movement from detected faces
         let mouthVar = mouthMovementProcessor?.process(faces: faces) ?? 0.0
 
-        // 3. Face identity matching (throttled internally)
-        // TODO: re-enable embedding search
-        // let identified = faceEmbeddingProcessor?.identify(
-        //     faces: faces, in: pixelBuffer
-        // ) ?? []
-        let identified = faces.map {
-            IdentifiedFace(name: "Detected", boundingBox: $0.boundingBox, confidence: 0)
+        // 3. Face identity matching (throttled internally by FaceEmbeddingProcessor)
+        let identified = faceEmbeddingProcessor?.identify(
+            faces: faces, in: pixelBuffer
+        ) ?? faces.map {
+            IdentifiedFace(name: "Unknown", boundingBox: $0.boundingBox, confidence: 0)
         }
 
         // 4. Cross-queue state update

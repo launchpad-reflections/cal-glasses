@@ -164,11 +164,11 @@ final class FaceEmbeddingProcessor {
         from pixelBuffer: CVPixelBuffer,
         boundingBox: CGRect
     ) -> CGImage? {
-        // Orient the CIImage to match Vision's coordinate space (portrait).
-        // The raw buffer is landscape; applying .right rotates it to portrait,
-        // matching the orientation we pass to VNImageRequestHandler.
+        // Orient the CIImage to match Vision's coordinate space (portrait, mirrored).
+        // The raw buffer is landscape and un-mirrored; applying .leftMirrored
+        // rotates + mirrors it to match the orientation we pass to VNImageRequestHandler.
         let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
-            .oriented(.right)
+            .oriented(.leftMirrored)
 
         let imageWidth = ciImage.extent.width
         let imageHeight = ciImage.extent.height

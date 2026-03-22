@@ -34,6 +34,7 @@
 		B10000050000000000000005 /* FaceOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000050000000000000005 /* FaceOverlayView.swift */; };
 		B10000060000000000000006 /* EnrollmentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000060000000000000006 /* EnrollmentView.swift */; };
 		B10000070000000000000007 /* MobileFaceNet.mlpackage in Sources */ = {isa = PBXBuildFile; fileRef = B20000070000000000000007 /* MobileFaceNet.mlpackage */; };
+		B10000080000000000000008 /* SnapshotPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000080000000000000008 /* SnapshotPreviewView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -63,6 +64,7 @@
 		B20000050000000000000005 /* FaceOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceOverlayView.swift; sourceTree = "<group>"; };
 		B20000060000000000000006 /* EnrollmentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnrollmentView.swift; sourceTree = "<group>"; };
 		B20000070000000000000007 /* MobileFaceNet.mlpackage */ = {isa = PBXFileReference; lastKnownFileType = folder.mlpackage; path = MobileFaceNet.mlpackage; sourceTree = "<group>"; };
+		B20000080000000000000008 /* SnapshotPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapshotPreviewView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -168,6 +170,7 @@
 				7171E3852F6FA8D40034B4AA /* TranscriptOverlayView.swift */,
 				B20000050000000000000005 /* FaceOverlayView.swift */,
 				B20000060000000000000006 /* EnrollmentView.swift */,
+				B20000080000000000000008 /* SnapshotPreviewView.swift */,
 			);
 			path = UI;
 			sourceTree = "<group>";
@@ -292,6 +295,7 @@
 				B10000050000000000000005 /* FaceOverlayView.swift in Sources */,
 				B10000060000000000000006 /* EnrollmentView.swift in Sources */,
 				B10000070000000000000007 /* MobileFaceNet.mlpackage in Sources */,
+				B10000080000000000000008 /* SnapshotPreviewView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
