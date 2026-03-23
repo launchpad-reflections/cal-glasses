@@ -7,11 +7,16 @@ struct GlassesView: View {
 
     let wearables: WearablesInterface
     @ObservedObject var connectionManager: GlassesConnectionManager
+    @ObservedObject var coordinator: PipelineCoordinator
+    @ObservedObject var gallery: FaceGallery
 
     var body: some View {
         if connectionManager.connectionState == .registered ||
            connectionManager.connectionState == .streaming {
-            GlassesStreamView(wearables: wearables, connectionManager: connectionManager)
+            GlassesStreamView(wearables: wearables,
+                              connectionManager: connectionManager,
+                              coordinator: coordinator,
+                              gallery: gallery)
         } else {
             GlassesHomeView(connectionManager: connectionManager)
         }
@@ -73,16 +78,23 @@ private struct GlassesHomeView: View {
     }
 }
 
-// MARK: - Stream View (mirrors sensory's StreamView exactly)
+// MARK: - Stream View
 
 private struct GlassesStreamView: View {
 
     @StateObject private var streamVM: GlassesStreamManager
     @ObservedObject var connectionManager: GlassesConnectionManager
+    @ObservedObject var coordinator: PipelineCoordinator
+    let gallery: FaceGallery
 
-    init(wearables: WearablesInterface, connectionManager: GlassesConnectionManager) {
+    init(wearables: WearablesInterface,
+         connectionManager: GlassesConnectionManager,
+         coordinator: PipelineCoordinator,
+         gallery: FaceGallery) {
         self._streamVM = StateObject(wrappedValue: GlassesStreamManager(wearables: wearables))
         self.connectionManager = connectionManager
+        self.coordinator = coordinator
+        self.gallery = gallery
     }
 
     var body: some View {
@@ -107,10 +119,23 @@ private struct GlassesStreamView: View {
                 }
             }
 
-            // Controls overlay
+            // Speaker state border overlay
+            if streamVM.isStreaming {
+                Rectangle()
+                    .stroke(coordinator.speakerState.color, lineWidth: 6)
+                    .ignoresSafeArea()
+            }
+
+            // Controls + info overlay
             VStack {
-                // Top bar
+                // Top bar: speaker state + disconnect
                 HStack(alignment: .top) {
+                    if streamVM.isStreaming {
+                        Text(coordinator.speakerState.displayText)
+                            .font(.headline.bold())
+                            .foregroundColor(coordinator.speakerState.color)
+                            .shadow(color: .black.opacity(0.6), radius: 2, x: 1, y: 1)
+                    }
                     Spacer()
                     Button {
                         connectionManager.disconnect()
@@ -122,11 +147,49 @@ private struct GlassesStreamView: View {
                 }
                 .padding()
 
+                // Identified faces
+                if streamVM.isStreaming && !coordinator.identifiedFaces.isEmpty {
+                    HStack {
+                        ForEach(coordinator.identifiedFaces) { face in
+                            if face.name != "Unknown" {
+                                Text("\(face.name) \(Int(face.confidence * 100))%")
+                                    .font(.caption2.bold())
+                                    .foregroundStyle(.white)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(.cyan.opacity(0.7))
+                                    .clipShape(Capsule())
+                            }
+                        }
+                        Spacer()
+                    }
+                    .padding(.horizontal)
+                }
+
                 Spacer()
+
+                // Transcript
+                if streamVM.isStreaming && !coordinator.transcriptText.isEmpty {
+                    Text(coordinator.transcriptText)
+                        .font(.body)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(Color.black.opacity(0.6))
+                        .cornerRadius(8)
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 8)
+                }
 
                 // Bottom controls
                 VStack(spacing: 12) {
                     if streamVM.isStreaming {
+                        // Debug info
+                        Text(String(format: "Audio: %.2f  Mouth: %.6f",
+                                    coordinator.audioProb, coordinator.mouthVariance))
+                            .font(.caption2.monospaced())
+                            .foregroundColor(.white.opacity(0.6))
+
                         Button {
                             Task { await streamVM.stopStreaming() }
                         } label: {
@@ -160,6 +223,10 @@ private struct GlassesStreamView: View {
             Button("OK") { streamVM.dismissError() }
         } message: {
             Text(streamVM.errorMessage)
+        }
+        .onAppear {
+            // Wire up the pipeline coordinator to the stream manager
+            streamVM.coordinator = coordinator
         }
         .onDisappear {
             Task {

@@ -11,6 +11,9 @@ final class GlassesAudioCapture {
     private let targetSampleRate: Double = 16000
     private var converter: AVAudioConverter?
 
+    /// Pipeline coordinator to feed audio for VAD + transcription.
+    private weak var coordinator: PipelineCoordinator?
+
     private let lock = NSLock()
     private var buffer: [Float] = []
 
@@ -25,7 +28,10 @@ final class GlassesAudioCapture {
     }
 
     /// Start capturing from the HFP Bluetooth microphone.
-    func start() throws {
+    /// Feeds resampled audio to the pipeline coordinator for VAD + transcription.
+    func start(coordinator: PipelineCoordinator? = nil) throws {
+        self.coordinator = coordinator
+
         let inputNode = engine.inputNode
         let inputFormat = inputNode.outputFormat(forBus: 0)
 
@@ -54,6 +60,7 @@ final class GlassesAudioCapture {
         lock.lock()
         buffer.removeAll()
         lock.unlock()
+        coordinator = nil
     }
 
     /// Drain all accumulated samples since last call.
@@ -95,6 +102,12 @@ final class GlassesAudioCapture {
         }
 
         if error != nil { return }
+        guard outputBuffer.frameLength > 0 else { return }
+
+        // Feed resampled audio to pipeline for VAD + transcription
+        coordinator?.processAudio(outputBuffer)
+
+        // Also accumulate in buffer for potential future use
         guard let channelData = outputBuffer.floatChannelData?[0] else { return }
         let count = Int(outputBuffer.frameLength)
 

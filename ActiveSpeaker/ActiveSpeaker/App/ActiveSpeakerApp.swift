@@ -44,7 +44,10 @@ struct ActiveSpeakerApp: App {
                     Label("Enroll", systemImage: "person.crop.circle.badge.plus")
                 }
 
-                GlassesView(wearables: wearables, connectionManager: glassesConnection)
+                GlassesView(wearables: wearables,
+                           connectionManager: glassesConnection,
+                           coordinator: coordinator,
+                           gallery: gallery)
                     .tabItem {
                         Label("Glasses", systemImage: "eyeglasses")
                     }

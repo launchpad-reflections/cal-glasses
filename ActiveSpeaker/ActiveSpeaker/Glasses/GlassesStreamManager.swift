@@ -1,9 +1,12 @@
 import AVFoundation
+import CoreImage
 import MWDATCamera
 import MWDATCore
 import SwiftUI
 
 /// Manages video/audio streaming from Meta glasses via MWDAT SDK.
+/// Feeds frames and audio into the shared PipelineCoordinator for
+/// face detection, transcription, and speaker state analysis.
 @MainActor
 final class GlassesStreamManager: ObservableObject {
 
@@ -24,18 +27,30 @@ final class GlassesStreamManager: ObservableObject {
     private var deviceMonitorTask: Task<Void, Never>?
     private let audioCapture = GlassesAudioCapture()
 
+    /// Pipeline coordinator for running face detection + transcription on glasses stream.
+    weak var coordinator: PipelineCoordinator?
+
+    /// Shared CIContext for UIImage → CVPixelBuffer conversion.
+    private let ciContext = CIContext()
+
+    /// Video processing queue (matches CaptureManager pattern).
+    private let videoProcessingQueue = DispatchQueue(
+        label: "com.activespeaker.glasses.video",
+        qos: .userInteractive
+    )
+
     init(wearables: WearablesInterface) {
         self.wearables = wearables
         self.deviceSelector = AutoDeviceSelector(wearables: wearables)
 
         let config = StreamSessionConfig(
             videoCodec: .raw,
-            resolution: .low,
+            resolution: .high,
             frameRate: 24
         )
         streamSession = StreamSession(streamSessionConfig: config, deviceSelector: deviceSelector)
 
-        NSLog("[GlassesStream] init: session created, setting up listeners")
+        NSLog("[GlassesStream] init: session created (high res), setting up listeners")
         setupListeners()
         monitorDevices()
         updateStatusFromState(streamSession.state)
@@ -50,45 +65,48 @@ final class GlassesStreamManager: ObservableObject {
 
         // Request camera permission from glasses
         do {
-            NSLog("[GlassesStream] checking camera permission...")
             let status = try await wearables.checkPermissionStatus(.camera)
-            NSLog("[GlassesStream] permission status: \(status)")
             if status != .granted {
-                NSLog("[GlassesStream] requesting camera permission...")
                 let result = try await wearables.requestPermission(.camera)
-                NSLog("[GlassesStream] permission result: \(result)")
                 guard result == .granted else {
                     showStreamError("Camera permission denied.")
                     return
                 }
             }
         } catch {
-            NSLog("[GlassesStream] permission error: \(error)")
             showStreamError("Permission error: \(error)")
             return
         }
 
         // Set up HFP audio session BEFORE starting stream
-        NSLog("[GlassesStream] setting up HFP audio session...")
         do {
             try audioCapture.setupAudioSession()
-            NSLog("[GlassesStream] HFP audio session configured")
         } catch {
             NSLog("[GlassesStream] HFP audio session setup failed: \(error)")
         }
 
         // Wait for HFP to stabilize (Meta docs requirement)
-        NSLog("[GlassesStream] waiting 2s for HFP stabilization...")
         try? await Task.sleep(nanoseconds: 2 * NSEC_PER_SEC)
 
         // Start streaming
-        NSLog("[GlassesStream] calling streamSession.start()...")
         await streamSession.start()
-        NSLog("[GlassesStream] streamSession.start() returned, state=\(streamSession.state)")
+
+        // Start audio capture and feed to pipeline
+        if !audioCapture.isRunning {
+            do {
+                try audioCapture.start(coordinator: coordinator)
+            } catch {
+                NSLog("[GlassesStream] Failed to start mic: \(error)")
+            }
+        }
+
+        // Start transcription on the pipeline
+        coordinator?.startTranscription()
     }
 
     func stopStreaming() async {
         audioCapture.stop()
+        coordinator?.stopTranscription()
         await streamSession.stop()
     }
 
@@ -103,7 +121,6 @@ final class GlassesStreamManager: ObservableObject {
         stateListenerToken = streamSession.statePublisher.listen { [weak self] state in
             Task { @MainActor [weak self] in
                 guard let self else { return }
-                NSLog("[GlassesStream] state changed: \(state)")
                 self.updateStatusFromState(state)
             }
         }
@@ -117,6 +134,18 @@ final class GlassesStreamManager: ObservableObject {
                         NSLog("[GlassesStream] first frame received! size=\(image.size)")
                         self.hasReceivedFirstFrame = true
                     }
+                    // Feed frame to pipeline for face detection on background queue
+                    if let coordinator = self.coordinator {
+                        let ciCtx = self.ciContext
+                        self.videoProcessingQueue.async {
+                            if let pixelBuffer = Self.uiImageToPixelBuffer(image, ciContext: ciCtx) {
+                                coordinator.processVideo(
+                                    pixelBuffer: pixelBuffer,
+                                    orientation: .up
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -124,7 +153,6 @@ final class GlassesStreamManager: ObservableObject {
         errorListenerToken = streamSession.errorPublisher.listen { [weak self] error in
             Task { @MainActor [weak self] in
                 guard let self else { return }
-                NSLog("[GlassesStream] stream error: \(error)")
                 self.showStreamError(self.formatError(error))
             }
         }
@@ -133,9 +161,7 @@ final class GlassesStreamManager: ObservableObject {
     private func monitorDevices() {
         deviceMonitorTask = Task { @MainActor in
             for await device in deviceSelector.activeDeviceStream() {
-                let hasDevice = device != nil
-                NSLog("[GlassesStream] active device changed: \(device ?? "nil"), hasDevice=\(hasDevice)")
-                self.hasActiveDevice = hasDevice
+                self.hasActiveDevice = device != nil
             }
         }
     }
@@ -176,5 +202,30 @@ final class GlassesStreamManager: ObservableObject {
         case .thermalCritical:              return "Device overheating."
         @unknown default:                   return "An unknown error occurred."
         }
+    }
+
+    // MARK: - Pixel Buffer Conversion
+
+    /// Convert UIImage to CVPixelBuffer for Vision/CoreML pipeline processing.
+    private static func uiImageToPixelBuffer(_ image: UIImage, ciContext: CIContext) -> CVPixelBuffer? {
+        guard let cgImage = image.cgImage else { return nil }
+        let ciImage = CIImage(cgImage: cgImage)
+
+        let width = cgImage.width
+        let height = cgImage.height
+
+        var pixelBuffer: CVPixelBuffer?
+        let attrs: [String: Any] = [
+            kCVPixelBufferCGImageCompatibilityKey as String: true,
+            kCVPixelBufferCGBitmapContextCompatibilityKey as String: true
+        ]
+        let status = CVPixelBufferCreate(
+            kCFAllocatorDefault, width, height,
+            kCVPixelFormatType_32BGRA, attrs as CFDictionary, &pixelBuffer
+        )
+        guard status == kCVReturnSuccess, let buffer = pixelBuffer else { return nil }
+
+        ciContext.render(ciImage, to: buffer)
+        return buffer
     }
 }
