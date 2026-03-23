@@ -41,7 +41,7 @@ struct FaceOverlayView: View {
             }
         }
         .allowsHitTesting(false)
-        .onChange(of: faces) { newFaces in
+        .onChange(of: faces) { _, newFaces in
             guard let first = newFaces.first else { return }
             let rect = visionRectToView(first.boundingBox)
             let bb = first.boundingBox

@@ -15,6 +15,18 @@ struct ContentView: View {
             )
             .ignoresSafeArea()
 
+            VStack {
+                Image("Logo")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 60, height: 60)
+                    .clipShape(Circle())
+                    .shadow(radius: 4)
+                    .padding(.top, 8)
+
+                Spacer()
+            }
+
             StatusOverlayView(
                 state: coordinator.speakerState,
                 audioProb: coordinator.audioProb,

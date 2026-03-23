@@ -100,6 +100,9 @@ struct CameraPreviewView: UIViewRepresentable {
                 // Vision rect: origin bottom-left, 0–1, portrait-oriented.
                 // Convert to UIKit: origin top-left, pixels.
                 let vb = face.boundingBox
+                guard !vb.origin.x.isNaN, !vb.origin.y.isNaN,
+                      !vb.size.width.isNaN, !vb.size.height.isNaN,
+                      vb.width > 0, vb.height > 0 else { continue }
                 let rect = CGRect(
                     x: vb.minX * displayW - xOff,
                     y: (1 - vb.maxY) * displayH - yOff,

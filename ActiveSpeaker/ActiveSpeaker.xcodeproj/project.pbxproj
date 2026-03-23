@@ -3,10 +3,25 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 70;
+	objectVersion = 56;
 	objects = {
 
 /* Begin PBXBuildFile section */
+		451968B32F70B84200DCA269 /* decoder_kv.ort in Resources */ = {isa = PBXBuildFile; fileRef = 451968AD2F70B84200DCA269 /* decoder_kv.ort */; };
+		451968B42F70B84200DCA269 /* tokenizer.bin in Resources */ = {isa = PBXBuildFile; fileRef = 451968B12F70B84200DCA269 /* tokenizer.bin */; };
+		451968B52F70B84200DCA269 /* frontend.ort in Resources */ = {isa = PBXBuildFile; fileRef = 451968AF2F70B84200DCA269 /* frontend.ort */; };
+		451968B62F70B84200DCA269 /* encoder.ort in Resources */ = {isa = PBXBuildFile; fileRef = 451968AE2F70B84200DCA269 /* encoder.ort */; };
+		451968B72F70B84200DCA269 /* cross_kv.ort in Resources */ = {isa = PBXBuildFile; fileRef = 451968AC2F70B84200DCA269 /* cross_kv.ort */; };
+		451968B82F70B84200DCA269 /* streaming_config.json in Resources */ = {isa = PBXBuildFile; fileRef = 451968B02F70B84200DCA269 /* streaming_config.json */; };
+		451968B92F70B84200DCA269 /* adapter.ort in Resources */ = {isa = PBXBuildFile; fileRef = 451968AB2F70B84200DCA269 /* adapter.ort */; };
+		451968BC2F70C1D500DCA269 /* MWDATCamera in Frameworks */ = {isa = PBXBuildFile; productRef = 451968BB2F70C1D500DCA269 /* MWDATCamera */; };
+		451968BE2F70C1D500DCA269 /* MWDATCore in Frameworks */ = {isa = PBXBuildFile; productRef = 451968BD2F70C1D500DCA269 /* MWDATCore */; };
+		451968C02F70C1D500DCA269 /* MWDATMockDevice in Frameworks */ = {isa = PBXBuildFile; productRef = 451968BF2F70C1D500DCA269 /* MWDATMockDevice */; };
+		451968C62F70C2A300DCA269 /* GlassesStreamManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 451968C42F70C2A300DCA269 /* GlassesStreamManager.swift */; };
+		451968C72F70C2A300DCA269 /* GlassesConnectionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 451968C22F70C2A300DCA269 /* GlassesConnectionManager.swift */; };
+		451968C82F70C2A300DCA269 /* GlassesConnectionState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 451968C32F70C2A300DCA269 /* GlassesConnectionState.swift */; };
+		451968C92F70C2A300DCA269 /* GlassesAudioCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 451968C12F70C2A300DCA269 /* GlassesAudioCapture.swift */; };
+		451968CD2F71103C00DCA269 /* GlassesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 451968CC2F71103C00DCA269 /* GlassesView.swift */; };
 		7171E3742F6F8F7B0034B4AA /* onnxruntime in Frameworks */ = {isa = PBXBuildFile; productRef = 7171E3732F6F8F7B0034B4AA /* onnxruntime */; };
 		7171E3762F6F8F7B0034B4AA /* onnxruntime_extensions in Frameworks */ = {isa = PBXBuildFile; productRef = 7171E3752F6F8F7B0034B4AA /* onnxruntime_extensions */; };
 		7171E3782F6F8FF10034B4AA /* silero_vad.onnx in Resources */ = {isa = PBXBuildFile; fileRef = 7171E3772F6F8FF10034B4AA /* silero_vad.onnx */; };
@@ -35,9 +50,22 @@
 		B10000060000000000000006 /* EnrollmentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000060000000000000006 /* EnrollmentView.swift */; };
 		B10000070000000000000007 /* MobileFaceNet.mlpackage in Sources */ = {isa = PBXBuildFile; fileRef = B20000070000000000000007 /* MobileFaceNet.mlpackage */; };
 		B10000080000000000000008 /* SnapshotPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000080000000000000008 /* SnapshotPreviewView.swift */; };
+		C10000010000000000000001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C20000010000000000000001 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		451968AB2F70B84200DCA269 /* adapter.ort */ = {isa = PBXFileReference; lastKnownFileType = file; path = adapter.ort; sourceTree = "<group>"; };
+		451968AC2F70B84200DCA269 /* cross_kv.ort */ = {isa = PBXFileReference; lastKnownFileType = file; path = cross_kv.ort; sourceTree = "<group>"; };
+		451968AD2F70B84200DCA269 /* decoder_kv.ort */ = {isa = PBXFileReference; lastKnownFileType = file; path = decoder_kv.ort; sourceTree = "<group>"; };
+		451968AE2F70B84200DCA269 /* encoder.ort */ = {isa = PBXFileReference; lastKnownFileType = file; path = encoder.ort; sourceTree = "<group>"; };
+		451968AF2F70B84200DCA269 /* frontend.ort */ = {isa = PBXFileReference; lastKnownFileType = file; path = frontend.ort; sourceTree = "<group>"; };
+		451968B02F70B84200DCA269 /* streaming_config.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = streaming_config.json; sourceTree = "<group>"; };
+		451968B12F70B84200DCA269 /* tokenizer.bin */ = {isa = PBXFileReference; lastKnownFileType = archive.macbinary; path = tokenizer.bin; sourceTree = "<group>"; };
+		451968C12F70C2A300DCA269 /* GlassesAudioCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassesAudioCapture.swift; sourceTree = "<group>"; };
+		451968C22F70C2A300DCA269 /* GlassesConnectionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassesConnectionManager.swift; sourceTree = "<group>"; };
+		451968C32F70C2A300DCA269 /* GlassesConnectionState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassesConnectionState.swift; sourceTree = "<group>"; };
+		451968C42F70C2A300DCA269 /* GlassesStreamManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassesStreamManager.swift; sourceTree = "<group>"; };
+		451968CC2F71103C00DCA269 /* GlassesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassesView.swift; sourceTree = "<group>"; };
 		7171E3772F6F8FF10034B4AA /* silero_vad.onnx */ = {isa = PBXFileReference; lastKnownFileType = file; path = silero_vad.onnx; sourceTree = "<group>"; };
 		7171E3812F6FA8A70034B4AA /* TranscriptionProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptionProvider.swift; sourceTree = "<group>"; };
 		7171E3832F6FA8BE0034B4AA /* MoonshineTranscriber.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoonshineTranscriber.swift; sourceTree = "<group>"; };
@@ -65,11 +93,8 @@
 		B20000060000000000000006 /* EnrollmentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnrollmentView.swift; sourceTree = "<group>"; };
 		B20000070000000000000007 /* MobileFaceNet.mlpackage */ = {isa = PBXFileReference; lastKnownFileType = folder.mlpackage; path = MobileFaceNet.mlpackage; sourceTree = "<group>"; };
 		B20000080000000000000008 /* SnapshotPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapshotPreviewView.swift; sourceTree = "<group>"; };
+		C20000010000000000000001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
-
-/* Begin PBXFileSystemSynchronizedRootGroup section */
-		7171E38F2F6FA9900034B4AA /* models */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = models; sourceTree = "<group>"; };
-/* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		A40000010000000000000001 /* Frameworks */ = {
@@ -77,7 +102,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				7171E3762F6F8F7B0034B4AA /* onnxruntime_extensions in Frameworks */,
+				451968BC2F70C1D500DCA269 /* MWDATCamera in Frameworks */,
 				7171E3742F6F8F7B0034B4AA /* onnxruntime in Frameworks */,
+				451968BE2F70C1D500DCA269 /* MWDATCore in Frameworks */,
+				451968C02F70C1D500DCA269 /* MWDATMockDevice in Frameworks */,
 				7171E3802F6FA7DC0034B4AA /* MoonshineVoice in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -85,20 +113,46 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		451968B22F70B84200DCA269 /* small-streaming-en */ = {
+			isa = PBXGroup;
+			children = (
+				451968AB2F70B84200DCA269 /* adapter.ort */,
+				451968AC2F70B84200DCA269 /* cross_kv.ort */,
+				451968AD2F70B84200DCA269 /* decoder_kv.ort */,
+				451968AE2F70B84200DCA269 /* encoder.ort */,
+				451968AF2F70B84200DCA269 /* frontend.ort */,
+				451968B02F70B84200DCA269 /* streaming_config.json */,
+				451968B12F70B84200DCA269 /* tokenizer.bin */,
+			);
+			path = "small-streaming-en";
+			sourceTree = "<group>";
+		};
+		451968C52F70C2A300DCA269 /* Glasses */ = {
+			isa = PBXGroup;
+			children = (
+				451968C12F70C2A300DCA269 /* GlassesAudioCapture.swift */,
+				451968C22F70C2A300DCA269 /* GlassesConnectionManager.swift */,
+				451968C32F70C2A300DCA269 /* GlassesConnectionState.swift */,
+				451968C42F70C2A300DCA269 /* GlassesStreamManager.swift */,
+			);
+			path = Glasses;
+			sourceTree = "<group>";
+		};
 		A50000010000000000000001 = {
 			isa = PBXGroup;
 			children = (
 				A50000020000000000000002 /* ActiveSpeaker */,
 				A50000090000000000000009 /* Products */,
 				7171E3772F6F8FF10034B4AA /* silero_vad.onnx */,
-				7171E38F2F6FA9900034B4AA /* models */,
 				B20000070000000000000007 /* MobileFaceNet.mlpackage */,
+				451968B22F70B84200DCA269 /* small-streaming-en */,
 			);
 			sourceTree = "<group>";
 		};
 		A50000020000000000000002 /* ActiveSpeaker */ = {
 			isa = PBXGroup;
 			children = (
+				451968C52F70C2A300DCA269 /* Glasses */,
 				A50000030000000000000003 /* App */,
 				A50000040000000000000004 /* Capture */,
 				A50000050000000000000005 /* Pipeline */,
@@ -106,6 +160,7 @@
 				A50000070000000000000007 /* Models */,
 				A50000080000000000000008 /* UI */,
 				A5000010000000000000000A /* Utilities */,
+				C20000010000000000000001 /* Assets.xcassets */,
 			);
 			path = ActiveSpeaker;
 			sourceTree = "<group>";
@@ -165,6 +220,7 @@
 		A50000080000000000000008 /* UI */ = {
 			isa = PBXGroup;
 			children = (
+				451968CC2F71103C00DCA269 /* GlassesView.swift */,
 				A20000020000000000000002 /* ContentView.swift */,
 				A20000030000000000000003 /* StatusOverlayView.swift */,
 				7171E3852F6FA8D40034B4AA /* TranscriptOverlayView.swift */,
@@ -206,14 +262,14 @@
 			);
 			dependencies = (
 			);
-			fileSystemSynchronizedGroups = (
-				7171E38F2F6FA9900034B4AA /* models */,
-			);
 			name = ActiveSpeaker;
 			packageProductDependencies = (
 				7171E3732F6F8F7B0034B4AA /* onnxruntime */,
 				7171E3752F6F8F7B0034B4AA /* onnxruntime_extensions */,
 				7171E37F2F6FA7DC0034B4AA /* MoonshineVoice */,
+				451968BB2F70C1D500DCA269 /* MWDATCamera */,
+				451968BD2F70C1D500DCA269 /* MWDATCore */,
+				451968BF2F70C1D500DCA269 /* MWDATMockDevice */,
 			);
 			productName = ActiveSpeaker;
 			productReference = A30000010000000000000001 /* ActiveSpeaker.app */;
@@ -246,6 +302,7 @@
 			packageReferences = (
 				7171E3722F6F8F7B0034B4AA /* XCRemoteSwiftPackageReference "onnxruntime-swift-package-manager" */,
 				7171E37E2F6FA7DC0034B4AA /* XCRemoteSwiftPackageReference "moonshine-swift" */,
+				451968BA2F70C1D500DCA269 /* XCRemoteSwiftPackageReference "meta-wearables-dat-ios" */,
 			);
 			productRefGroup = A50000090000000000000009 /* Products */;
 			projectDirPath = "";
@@ -261,7 +318,15 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C10000010000000000000001 /* Assets.xcassets in Resources */,
 				7171E3782F6F8FF10034B4AA /* silero_vad.onnx in Resources */,
+				451968B32F70B84200DCA269 /* decoder_kv.ort in Resources */,
+				451968B42F70B84200DCA269 /* tokenizer.bin in Resources */,
+				451968B52F70B84200DCA269 /* frontend.ort in Resources */,
+				451968B62F70B84200DCA269 /* encoder.ort in Resources */,
+				451968B72F70B84200DCA269 /* cross_kv.ort in Resources */,
+				451968B82F70B84200DCA269 /* streaming_config.json in Resources */,
+				451968B92F70B84200DCA269 /* adapter.ort in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -286,6 +351,10 @@
 				A1000012000000000000000C /* SpeakerState.swift in Sources */,
 				7171E3842F6FA8BE0034B4AA /* MoonshineTranscriber.swift in Sources */,
 				7171E3862F6FA8D40034B4AA /* TranscriptOverlayView.swift in Sources */,
+				451968C62F70C2A300DCA269 /* GlassesStreamManager.swift in Sources */,
+				451968C72F70C2A300DCA269 /* GlassesConnectionManager.swift in Sources */,
+				451968C82F70C2A300DCA269 /* GlassesConnectionState.swift in Sources */,
+				451968C92F70C2A300DCA269 /* GlassesAudioCapture.swift in Sources */,
 				A1000013000000000000000D /* RollingBuffer.swift in Sources */,
 				7171E3822F6FA8A70034B4AA /* TranscriptionProvider.swift in Sources */,
 				B10000010000000000000001 /* IdentifiedFace.swift in Sources */,
@@ -296,6 +365,7 @@
 				B10000060000000000000006 /* EnrollmentView.swift in Sources */,
 				B10000070000000000000007 /* MobileFaceNet.mlpackage in Sources */,
 				B10000080000000000000008 /* SnapshotPreviewView.swift in Sources */,
+				451968CD2F71103C00DCA269 /* GlassesView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -426,7 +496,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 2826M89H2N;
+				DEVELOPMENT_TEAM = YOUR_TEAM_ID;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ActiveSpeaker/App/Info.plist;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Camera access is needed to detect mouth movement for active speaker detection.";
@@ -441,7 +511,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.reflections.ActiveSpeaker;
+				PRODUCT_BUNDLE_IDENTIFIER = com.mohulshukla.ActiveSpeaker;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -456,7 +526,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 2826M89H2N;
+				DEVELOPMENT_TEAM = YOUR_TEAM_ID;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ActiveSpeaker/App/Info.plist;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Camera access is needed to detect mouth movement for active speaker detection.";
@@ -471,7 +541,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.reflections.ActiveSpeaker;
+				PRODUCT_BUNDLE_IDENTIFIER = com.mohulshukla.ActiveSpeaker;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -503,6 +573,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		451968BA2F70C1D500DCA269 /* XCRemoteSwiftPackageReference "meta-wearables-dat-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/facebook/meta-wearables-dat-ios";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.4.0;
+			};
+		};
 		7171E3722F6F8F7B0034B4AA /* XCRemoteSwiftPackageReference "onnxruntime-swift-package-manager" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/microsoft/onnxruntime-swift-package-manager";
@@ -522,6 +600,21 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		451968BB2F70C1D500DCA269 /* MWDATCamera */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 451968BA2F70C1D500DCA269 /* XCRemoteSwiftPackageReference "meta-wearables-dat-ios" */;
+			productName = MWDATCamera;
+		};
+		451968BD2F70C1D500DCA269 /* MWDATCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 451968BA2F70C1D500DCA269 /* XCRemoteSwiftPackageReference "meta-wearables-dat-ios" */;
+			productName = MWDATCore;
+		};
+		451968BF2F70C1D500DCA269 /* MWDATMockDevice */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 451968BA2F70C1D500DCA269 /* XCRemoteSwiftPackageReference "meta-wearables-dat-ios" */;
+			productName = MWDATMockDevice;
+		};
 		7171E3732F6F8F7B0034B4AA /* onnxruntime */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 7171E3722F6F8F7B0034B4AA /* XCRemoteSwiftPackageReference "onnxruntime-swift-package-manager" */;
