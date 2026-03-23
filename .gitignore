@@ -4,6 +4,7 @@
 # Xcode
 xcuserdata/
 *.xcworkspace/
+DerivedData/
 
 # Python
 venv/
@@ -13,3 +14,7 @@ venv/
 
 # Moonshine model files (large binaries — see MODELS.md for download instructions)
 ActiveSpeaker/models/
+**/small-streaming-en/
+
+# Xcode SPM build artifacts
+.build/

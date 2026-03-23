@@ -4,24 +4,23 @@
 
 The Moonshine model files (~160MB) are not checked into git. Download and set them up before building:
 
-1. Download the iOS examples archive:
+1. Download and extract:
    ```bash
    curl -L -o /tmp/ios-examples.tar.gz \
      https://github.com/moonshine-ai/moonshine/releases/latest/download/ios-examples.tar.gz
-   ```
-
-2. Extract the model files into the project:
-   ```bash
    tar -xzf /tmp/ios-examples.tar.gz -C /tmp Transcriber/models/
-   cp -r /tmp/Transcriber/models ActiveSpeaker/
+   cp -r /tmp/Transcriber/models/small-streaming-en ActiveSpeaker/small-streaming-en
    ```
 
-3. In Xcode, drag the `ActiveSpeaker/models/` folder into the project navigator:
-   - Select **"Create folder references"** (blue folder icon)
-   - Ensure **"Add to targets: ActiveSpeaker"** is checked
+2. In Xcode, the `small-streaming-en` group under the project root should already reference these files. If the files show in red, right-click the group and re-link to the `ActiveSpeaker/small-streaming-en/` directory.
 
-The model files (`encoder.ort`, `decoder_kv.ort`, `adapter.ort`, `cross_kv.ort`, `frontend.ort`, `tokenizer.bin`, `streaming_config.json`) should appear in **Build Phases → Copy Bundle Resources**.
+3. Verify the model files appear in **Build Phases → Copy Bundle Resources**:
+   `encoder.ort`, `decoder_kv.ort`, `adapter.ort`, `cross_kv.ort`, `frontend.ort`, `tokenizer.bin`, `streaming_config.json`
 
 ## Silero VAD
 
 The `silero_vad.onnx` file in `ActiveSpeaker/` is already tracked in git.
+
+## MobileFaceNet
+
+The `MobileFaceNet.mlpackage` in `ActiveSpeaker/` is already tracked in git.

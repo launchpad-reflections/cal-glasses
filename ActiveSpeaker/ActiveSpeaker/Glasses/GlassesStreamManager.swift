@@ -1,5 +1,5 @@
 import AVFoundation
-import CoreImage
+import CoreMedia
 import MWDATCamera
 import MWDATCore
 import SwiftUI
@@ -30,9 +30,6 @@ final class GlassesStreamManager: ObservableObject {
     /// Pipeline coordinator for running face detection + transcription on glasses stream.
     weak var coordinator: PipelineCoordinator?
 
-    /// Shared CIContext for UIImage → CVPixelBuffer conversion.
-    private let ciContext = CIContext()
-
     /// Video processing queue (matches CaptureManager pattern).
     private let videoProcessingQueue = DispatchQueue(
         label: "com.activespeaker.glasses.video",
@@ -50,18 +47,14 @@ final class GlassesStreamManager: ObservableObject {
         )
         streamSession = StreamSession(streamSessionConfig: config, deviceSelector: deviceSelector)
 
-        NSLog("[GlassesStream] init: session created (high res), setting up listeners")
+        NSLog("[GlassesStream] init: session created (high res, raw), setting up listeners")
         setupListeners()
         monitorDevices()
         updateStatusFromState(streamSession.state)
     }
 
     func startStreaming() async {
-        guard !isStreaming else {
-            NSLog("[GlassesStream] startStreaming called but already streaming, ignoring")
-            return
-        }
-        NSLog("[GlassesStream] startStreaming called, hasActiveDevice=\(hasActiveDevice)")
+        guard !isStreaming else { return }
 
         // Request camera permission from glasses
         do {
@@ -88,7 +81,6 @@ final class GlassesStreamManager: ObservableObject {
         // Wait for HFP to stabilize (Meta docs requirement)
         try? await Task.sleep(nanoseconds: 2 * NSEC_PER_SEC)
 
-        // Start streaming
         await streamSession.start()
 
         // Start audio capture and feed to pipeline
@@ -100,7 +92,6 @@ final class GlassesStreamManager: ObservableObject {
             }
         }
 
-        // Start transcription on the pipeline
         coordinator?.startTranscription()
     }
 
@@ -126,25 +117,30 @@ final class GlassesStreamManager: ObservableObject {
         }
 
         videoFrameListenerToken = streamSession.videoFramePublisher.listen { [weak self] videoFrame in
+            // Get the CMSampleBuffer directly — no UIImage conversion needed for pipeline.
+            // This is much faster and gives Vision the native pixel buffer.
+            let sampleBuffer = videoFrame.sampleBuffer
+
             Task { @MainActor [weak self] in
                 guard let self else { return }
+
+                // Update UI with UIImage (only for display)
                 if let image = videoFrame.makeUIImage() {
                     self.currentFrame = image
                     if !self.hasReceivedFirstFrame {
                         NSLog("[GlassesStream] first frame received! size=\(image.size)")
                         self.hasReceivedFirstFrame = true
                     }
-                    // Feed frame to pipeline for face detection on background queue
-                    if let coordinator = self.coordinator {
-                        let ciCtx = self.ciContext
-                        self.videoProcessingQueue.async {
-                            if let pixelBuffer = Self.uiImageToPixelBuffer(image, ciContext: ciCtx) {
-                                coordinator.processVideo(
-                                    pixelBuffer: pixelBuffer,
-                                    orientation: .up
-                                )
-                            }
-                        }
+                }
+
+                // Feed pixel buffer directly to pipeline on background queue
+                if let coordinator = self.coordinator,
+                   let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) {
+                    self.videoProcessingQueue.async {
+                        coordinator.processVideo(
+                            pixelBuffer: pixelBuffer,
+                            orientation: .up
+                        )
                     }
                 }
             }
@@ -202,30 +198,5 @@ final class GlassesStreamManager: ObservableObject {
         case .thermalCritical:              return "Device overheating."
         @unknown default:                   return "An unknown error occurred."
         }
-    }
-
-    // MARK: - Pixel Buffer Conversion
-
-    /// Convert UIImage to CVPixelBuffer for Vision/CoreML pipeline processing.
-    private static func uiImageToPixelBuffer(_ image: UIImage, ciContext: CIContext) -> CVPixelBuffer? {
-        guard let cgImage = image.cgImage else { return nil }
-        let ciImage = CIImage(cgImage: cgImage)
-
-        let width = cgImage.width
-        let height = cgImage.height
-
-        var pixelBuffer: CVPixelBuffer?
-        let attrs: [String: Any] = [
-            kCVPixelBufferCGImageCompatibilityKey as String: true,
-            kCVPixelBufferCGBitmapContextCompatibilityKey as String: true
-        ]
-        let status = CVPixelBufferCreate(
-            kCFAllocatorDefault, width, height,
-            kCVPixelFormatType_32BGRA, attrs as CFDictionary, &pixelBuffer
-        )
-        guard status == kCVReturnSuccess, let buffer = pixelBuffer else { return nil }
-
-        ciContext.render(ciImage, to: buffer)
-        return buffer
     }
 }
