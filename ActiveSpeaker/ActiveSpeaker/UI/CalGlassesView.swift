@@ -257,6 +257,12 @@ private struct CalStreamView: View {
                 streamVM.startFoodLogging()
             }
         }
+        .onChange(of: coordinator.transcriptText) { _, newText in
+            // Feed live transcript into the recording buffer
+            if case .recording = streamVM.foodLoggingState {
+                streamVM.feedTranscript(newText)
+            }
+        }
         .onDisappear {
             Task {
                 if streamVM.isStreaming {

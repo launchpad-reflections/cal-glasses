@@ -199,6 +199,11 @@ final class GlassesStreamManager: ObservableObject {
         }
     }
 
+    /// Called by the view when coordinator.transcriptText changes during recording.
+    func feedTranscript(_ text: String) {
+        recordingBuffer.addTranscript(text)
+    }
+
     /// Reset to idle state after viewing results.
     func dismissResults() {
         foodLoggingState = .idle

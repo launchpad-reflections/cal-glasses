@@ -1,6 +1,6 @@
 import UIKit
 
-/// Captures frames (at ~1fps) and transcript text during a 30-second food logging window.
+/// Captures frames (at ~1fps) and transcript text during a food logging window.
 final class FoodRecordingBuffer {
 
     struct FoodRecording {
@@ -9,7 +9,8 @@ final class FoodRecordingBuffer {
     }
 
     private var frames: [(image: UIImage, time: TimeInterval)] = []
-    private var transcriptSegments: [String] = []
+    private var allTranscriptText: String = ""
+    private var lastTranscriptUpdate: String = ""
     private var startTime: TimeInterval = 0
     private var lastFrameTime: TimeInterval = 0
     private(set) var isRecording = false
@@ -19,7 +20,8 @@ final class FoodRecordingBuffer {
 
     func startRecording() {
         frames.removeAll()
-        transcriptSegments.removeAll()
+        allTranscriptText = ""
+        lastTranscriptUpdate = ""
         startTime = CACurrentMediaTime()
         lastFrameTime = 0
         isRecording = true
@@ -28,11 +30,16 @@ final class FoodRecordingBuffer {
 
     func stopRecording() -> FoodRecording {
         isRecording = false
+        // Append the last in-progress transcript update
+        if !lastTranscriptUpdate.isEmpty {
+            allTranscriptText += lastTranscriptUpdate
+        }
+        let finalTranscript = allTranscriptText.trimmingCharacters(in: .whitespacesAndNewlines)
         let result = FoodRecording(
             frames: frames.map(\.image),
-            transcript: transcriptSegments.joined(separator: " ")
+            transcript: finalTranscript
         )
-        NSLog("[FoodBuffer] recording stopped: \(result.frames.count) frames, transcript: \(result.transcript.prefix(100))...")
+        NSLog("[FoodBuffer] recording stopped: \(result.frames.count) frames, transcript: '\(result.transcript.prefix(200))'")
         return result
     }
 
@@ -47,20 +54,17 @@ final class FoodRecordingBuffer {
         frames.append((image: image, time: elapsed))
     }
 
-    /// Add a transcript segment.
+    /// Add a transcript update. Moonshine sends the current line repeatedly
+    /// (updating in-place), so we track the latest version and append when new lines start.
     func addTranscript(_ text: String) {
         guard isRecording, !text.isEmpty else { return }
-        // Replace last segment if it's a continuation (Moonshine updates in-place)
-        if !transcriptSegments.isEmpty {
-            transcriptSegments[transcriptSegments.count - 1] = text
-        } else {
-            transcriptSegments.append(text)
-        }
-    }
 
-    /// Called when a transcript line is finalized.
-    func finalizeTranscriptLine() {
-        guard isRecording else { return }
-        transcriptSegments.append("")
+        // If this is a completely new text (not an update of the previous),
+        // save the previous and start fresh
+        if !lastTranscriptUpdate.isEmpty && !text.hasPrefix(lastTranscriptUpdate.prefix(10)) {
+            allTranscriptText += lastTranscriptUpdate + " "
+        }
+        lastTranscriptUpdate = text
+        NSLog("[FoodBuffer] transcript update: '\(text.prefix(80))'")
     }
 }
