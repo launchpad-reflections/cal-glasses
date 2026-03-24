@@ -272,71 +272,209 @@ private struct CalStreamView: View {
 private struct FoodResultsOverlay: View {
     let results: FoodAnalysisResult
     let onDismiss: () -> Void
+    @State private var selectedItem: FoodItem?
 
     var body: some View {
-        VStack(spacing: 12) {
-            HStack {
-                Text("Food Detected")
-                    .font(.headline.bold())
-                    .foregroundColor(.white)
-                Spacer()
-                Button(action: onDismiss) {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(.gray)
-                }
-            }
-
-            if results.items.isEmpty {
-                Text("No food detected. Try again.")
-                    .font(.body)
-                    .foregroundColor(.gray)
-                    .padding(.vertical, 8)
-            } else {
-                ForEach(results.items) { item in
-                    HStack {
-                        VStack(alignment: .leading, spacing: 2) {
-                            HStack(spacing: 6) {
-                                Image(systemName: iconForType(item.type))
-                                    .foregroundColor(colorForType(item.type))
-                                Text(item.name)
-                                    .font(.body.bold())
-                                    .foregroundColor(.white)
-                            }
-                            Text(item.quantity)
-                                .font(.caption)
-                                .foregroundColor(.gray)
-                        }
-                        Spacer()
-                        if item.hasNutritionLabel {
-                            Image(systemName: "tag.fill")
-                                .font(.caption)
-                                .foregroundColor(.blue)
-                        }
-                        Text("\(Int(item.confidence * 100))%")
-                            .font(.caption.bold())
-                            .foregroundColor(.green)
+        ScrollView {
+            VStack(spacing: 16) {
+                HStack {
+                    Text("Food Detected")
+                        .font(.headline.bold())
+                        .foregroundColor(.white)
+                    Spacer()
+                    Button(action: onDismiss) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.title3)
+                            .foregroundStyle(.gray)
                     }
-                    .padding(.vertical, 4)
+                }
+
+                if results.items.isEmpty {
+                    Text("No food detected. Try again.")
+                        .font(.body)
+                        .foregroundColor(.gray)
+                        .padding(.vertical, 8)
+                } else {
+                    ForEach(results.items) { item in
+                        Button {
+                            selectedItem = item
+                        } label: {
+                            FoodItemCard(item: item)
+                        }
+                    }
+                }
+
+                Button {
+                    onDismiss()
+                } label: {
+                    Text("Done")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(.green)
+                        .foregroundColor(.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
                 }
             }
-
-            Button {
-                onDismiss()
-            } label: {
-                Text("Done")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                    .background(.green)
-                    .foregroundColor(.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
-            }
+            .padding()
         }
-        .padding()
-        .background(.black.opacity(0.85))
+        .frame(maxHeight: 400)
+        .background(.black.opacity(0.9))
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .padding(.horizontal, 16)
         .padding(.bottom, 8)
+        .sheet(item: $selectedItem) { item in
+            FoodItemDetailView(item: item)
+        }
+    }
+}
+
+// MARK: - Food Item Card (tap to expand)
+
+private struct FoodItemCard: View {
+    let item: FoodItem
+
+    var body: some View {
+        HStack(spacing: 12) {
+            // Thumbnail
+            if let uiImage = item.image {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: 60, height: 60)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+            } else {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(.gray.opacity(0.3))
+                    .frame(width: 60, height: 60)
+                    .overlay {
+                        Image(systemName: iconForType(item.type))
+                            .foregroundColor(.gray)
+                    }
+            }
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(item.name)
+                    .font(.body.bold())
+                    .foregroundColor(.white)
+                    .lineLimit(1)
+                HStack(spacing: 8) {
+                    Text(item.quantity)
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                    if item.portions != 1.0 {
+                        Text(String(format: "× %.1f", item.portions))
+                            .font(.caption.bold())
+                            .foregroundColor(.orange)
+                    }
+                }
+                if let cal = item.calories {
+                    Text("\(cal) cal")
+                        .font(.caption.bold())
+                        .foregroundColor(.yellow)
+                }
+            }
+
+            Spacer()
+
+            VStack(alignment: .trailing, spacing: 4) {
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundColor(.gray)
+                Text("\(Int(item.confidence * 100))%")
+                    .font(.caption2.bold())
+                    .foregroundColor(.green)
+            }
+        }
+        .padding(10)
+        .background(.white.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+
+    private func iconForType(_ type: FoodItem.FoodItemType) -> String {
+        switch type {
+        case .packaged: return "shippingbox.fill"
+        case .dish: return "fork.knife"
+        case .drink: return "cup.and.saucer.fill"
+        }
+    }
+}
+
+// MARK: - Food Item Detail View (full screen sheet)
+
+private struct FoodItemDetailView: View {
+    let item: FoodItem
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationView {
+            ScrollView {
+                VStack(spacing: 20) {
+                    // Full image
+                    if let uiImage = item.image {
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
+
+                    // Food info
+                    VStack(alignment: .leading, spacing: 16) {
+                        // Name & type
+                        HStack {
+                            Image(systemName: iconForType(item.type))
+                                .font(.title2)
+                                .foregroundColor(colorForType(item.type))
+                            Text(item.name)
+                                .font(.title2.bold())
+                        }
+
+                        // Quantity & portions
+                        VStack(alignment: .leading, spacing: 8) {
+                            DetailRow(label: "Quantity", value: item.quantity)
+                            DetailRow(label: "Portions", value: String(format: "%.1f serving%@", item.portions, item.portions == 1.0 ? "" : "s"))
+                            if let cal = item.calories {
+                                DetailRow(label: "Calories", value: "\(cal) cal (total)")
+                            }
+                            if let ml = item.quantityMl {
+                                DetailRow(label: "Volume", value: "\(ml) ml")
+                            }
+                        }
+
+                        Divider()
+
+                        // Type & detection info
+                        VStack(alignment: .leading, spacing: 8) {
+                            DetailRow(label: "Type", value: item.type.rawValue.capitalized)
+                            DetailRow(label: "Confidence", value: "\(Int(item.confidence * 100))%")
+                            DetailRow(label: "Nutrition Label", value: item.hasNutritionLabel ? "Detected" : "Not visible")
+                            DetailRow(label: "Manual Entry", value: item.needsManualEntry ? "Recommended" : "Not needed")
+                        }
+
+                        // Nutrition summary from label
+                        if let summary = item.nutritionSummary, !summary.isEmpty {
+                            Divider()
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Nutrition Facts")
+                                    .font(.headline)
+                                Text(summary)
+                                    .font(.body)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    }
+                    .padding(.horizontal)
+                }
+                .padding(.vertical)
+            }
+            .navigationTitle("Food Details")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
     }
 
     private func iconForType(_ type: FoodItem.FoodItemType) -> String {
@@ -352,6 +490,22 @@ private struct FoodResultsOverlay: View {
         case .packaged: return .orange
         case .dish: return .yellow
         case .drink: return .cyan
+        }
+    }
+}
+
+private struct DetailRow: View {
+    let label: String
+    let value: String
+
+    var body: some View {
+        HStack {
+            Text(label)
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+            Spacer()
+            Text(value)
+                .font(.subheadline.bold())
         }
     }
 }

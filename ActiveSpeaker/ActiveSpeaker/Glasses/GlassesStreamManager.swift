@@ -134,8 +134,8 @@ final class GlassesStreamManager: ObservableObject {
 
         speaker.speak("Tracking started")
         recordingBuffer.startRecording()
-        recordingSecondsLeft = 30
-        foodLoggingState = .recording(secondsLeft: 30)
+        recordingSecondsLeft = 10
+        foodLoggingState = .recording(secondsLeft: 10)
         transcriptDuringRecording = ""
         foodResults = nil
 
@@ -175,10 +175,12 @@ final class GlassesStreamManager: ObservableObject {
         // Send to Gemini
         Task {
             do {
-                let result = try await gemini.analyzeFoodImages(
+                var result = try await gemini.analyzeFoodImages(
                     images: uniqueFrames,
                     transcript: recording.transcript
                 )
+                // Attach actual images to each food item
+                result.attachImages(from: uniqueFrames)
                 self.foodResults = result
                 self.foodLoggingState = .results
 

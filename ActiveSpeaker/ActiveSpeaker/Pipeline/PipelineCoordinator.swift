@@ -165,7 +165,7 @@ final class PipelineCoordinator: ObservableObject {
             }
 
             // Cooldown: don't re-trigger for 35 seconds (recording window + buffer)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 35) { [weak self] in
+            DispatchQueue.main.asyncAfter(deadline: .now() + 15) { [weak self] in
                 self?.foodLoggingCooldown = false
             }
         }
@@ -181,7 +181,7 @@ final class PipelineCoordinator: ObservableObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
             self?.foodLoggingTriggered = false
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 35) { [weak self] in
+        DispatchQueue.main.asyncAfter(deadline: .now() + 15) { [weak self] in
             self?.foodLoggingCooldown = false
         }
     }
