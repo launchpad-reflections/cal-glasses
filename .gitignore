@@ -18,3 +18,7 @@ ActiveSpeaker/models/
 
 # Xcode SPM build artifacts
 .build/
+
+# API keys
+gemini-config.plist
+**/Secrets.xcconfig

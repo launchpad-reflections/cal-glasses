@@ -23,6 +23,11 @@ final class PipelineCoordinator: ObservableObject {
     @Published private(set) var transcriptText: String = ""
     @Published private(set) var identifiedFaces: [IdentifiedFace] = []
 
+    // MARK: - Food logging trigger
+
+    @Published private(set) var foodLoggingTriggered: Bool = false
+    private var foodLoggingCooldown: Bool = false
+
     // MARK: - Processors (set once before processing starts)
 
     private var audioProcessors: [AudioProcessor] = []
@@ -63,7 +68,9 @@ final class PipelineCoordinator: ObservableObject {
 
         transcriptionProvider?.onTranscriptUpdate = { [weak self] text in
             DispatchQueue.main.async {
-                self?.transcriptText = text
+                guard let self else { return }
+                self.transcriptText = text
+                self.checkFoodLoggingTrigger(text)
             }
         }
     }
@@ -139,6 +146,43 @@ final class PipelineCoordinator: ObservableObject {
             self?.mouthVariance = mouthVar
             self?.speakerState = state
             self?.identifiedFaces = identified
+        }
+    }
+
+    // MARK: - Food Logging Trigger
+
+    private func checkFoodLoggingTrigger(_ text: String) {
+        guard !foodLoggingCooldown else { return }
+        let lower = text.lowercased()
+        if lower.contains("log food") || lower.contains("lock food") || lower.contains("log my food") {
+            foodLoggingTriggered = true
+            foodLoggingCooldown = true
+            NSLog("[Pipeline] food logging triggered by voice: \(text)")
+
+            // Reset trigger after a brief delay so it can be observed
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+                self?.foodLoggingTriggered = false
+            }
+
+            // Cooldown: don't re-trigger for 35 seconds (recording window + buffer)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 35) { [weak self] in
+                self?.foodLoggingCooldown = false
+            }
+        }
+    }
+
+    /// Manually trigger food logging (e.g., from a button).
+    func triggerFoodLogging() {
+        guard !foodLoggingCooldown else { return }
+        foodLoggingTriggered = true
+        foodLoggingCooldown = true
+        NSLog("[Pipeline] food logging triggered manually")
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            self?.foodLoggingTriggered = false
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 35) { [weak self] in
+            self?.foodLoggingCooldown = false
         }
     }
 

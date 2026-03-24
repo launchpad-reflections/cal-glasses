@@ -5,10 +5,11 @@ import MWDATCore
 import SwiftUI
 
 /// Manages video/audio streaming from Meta glasses via MWDAT SDK.
-/// Feeds frames and audio into the shared PipelineCoordinator for
-/// face detection, transcription, and speaker state analysis.
+/// Orchestrates the food logging flow: voice trigger → 30s recording → dedup → Gemini → results.
 @MainActor
 final class GlassesStreamManager: ObservableObject {
+
+    // MARK: - Stream state
 
     @Published private(set) var currentFrame: UIImage?
     @Published private(set) var hasReceivedFirstFrame: Bool = false
@@ -18,6 +19,21 @@ final class GlassesStreamManager: ObservableObject {
     @Published var showError: Bool = false
     @Published var errorMessage: String = ""
 
+    // MARK: - Food logging state
+
+    enum FoodLoggingState: Equatable {
+        case idle
+        case recording(secondsLeft: Int)
+        case processing
+        case results
+    }
+
+    @Published private(set) var foodLoggingState: FoodLoggingState = .idle
+    @Published private(set) var foodResults: FoodAnalysisResult?
+    @Published private(set) var transcriptDuringRecording: String = ""
+
+    // MARK: - Dependencies
+
     private let wearables: WearablesInterface
     private var streamSession: StreamSession
     private var stateListenerToken: AnyListenerToken?
@@ -26,16 +42,19 @@ final class GlassesStreamManager: ObservableObject {
     private let deviceSelector: AutoDeviceSelector
     private var deviceMonitorTask: Task<Void, Never>?
     private let audioCapture = GlassesAudioCapture()
-    private let speaker = GlassesSpeaker()
+    let speaker = GlassesSpeaker()
 
-    /// Pipeline coordinator for running face detection + transcription on glasses stream.
     weak var coordinator: PipelineCoordinator?
 
-    /// Video processing queue (matches CaptureManager pattern).
     private let videoProcessingQueue = DispatchQueue(
         label: "com.activespeaker.glasses.video",
         qos: .userInteractive
     )
+
+    private let recordingBuffer = FoodRecordingBuffer()
+    private let gemini = GeminiService(apiKey: "YOUR_GEMINI_API_KEY")
+    private var recordingTimer: Timer?
+    private var recordingSecondsLeft = 0
 
     init(wearables: WearablesInterface) {
         self.wearables = wearables
@@ -48,16 +67,16 @@ final class GlassesStreamManager: ObservableObject {
         )
         streamSession = StreamSession(streamSessionConfig: config, deviceSelector: deviceSelector)
 
-        NSLog("[GlassesStream] init: session created (high res, raw), setting up listeners")
         setupListeners()
         monitorDevices()
         updateStatusFromState(streamSession.state)
     }
 
+    // MARK: - Streaming
+
     func startStreaming() async {
         guard !isStreaming else { return }
 
-        // Request camera permission from glasses
         do {
             let status = try await wearables.checkPermissionStatus(.camera)
             if status != .granted {
@@ -72,19 +91,16 @@ final class GlassesStreamManager: ObservableObject {
             return
         }
 
-        // Set up HFP audio session BEFORE starting stream
         do {
             try audioCapture.setupAudioSession()
         } catch {
             NSLog("[GlassesStream] HFP audio session setup failed: \(error)")
         }
 
-        // Wait for HFP to stabilize (Meta docs requirement)
         try? await Task.sleep(nanoseconds: 2 * NSEC_PER_SEC)
 
         await streamSession.start()
 
-        // Start audio capture and feed to pipeline
         if !audioCapture.isRunning {
             do {
                 try audioCapture.start(coordinator: coordinator)
@@ -94,15 +110,12 @@ final class GlassesStreamManager: ObservableObject {
         }
 
         coordinator?.startTranscription()
-
-        // Speak the startup prompt through the glasses
-        let promptText = GlassesPrompt.defaultPrompt
-        speaker.speak(promptText)
-        NSLog("[GlassesStream] speaking prompt (\(promptText.count) chars)")
+        speaker.speak("Ready. Say log food to start tracking.")
     }
 
     func stopStreaming() async {
         speaker.stop()
+        stopRecordingTimer()
         audioCapture.stop()
         coordinator?.stopTranscription()
         await streamSession.stop()
@@ -113,7 +126,89 @@ final class GlassesStreamManager: ObservableObject {
         errorMessage = ""
     }
 
-    // MARK: - Private
+    // MARK: - Food Logging
+
+    /// Start a 30-second food recording window.
+    func startFoodLogging() {
+        guard foodLoggingState == .idle else { return }
+
+        speaker.speak("Tracking started")
+        recordingBuffer.startRecording()
+        recordingSecondsLeft = 30
+        foodLoggingState = .recording(secondsLeft: 30)
+        transcriptDuringRecording = ""
+        foodResults = nil
+
+        NSLog("[FoodLog] recording started")
+
+        recordingTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                self.recordingSecondsLeft -= 1
+                self.foodLoggingState = .recording(secondsLeft: self.recordingSecondsLeft)
+
+                if self.recordingSecondsLeft <= 0 {
+                    self.finishFoodLogging()
+                }
+            }
+        }
+    }
+
+    /// Manually trigger food logging (from button tap).
+    func manualTriggerFoodLogging() {
+        startFoodLogging()
+    }
+
+    private func finishFoodLogging() {
+        stopRecordingTimer()
+        speaker.speak("Tracking complete. Analyzing.")
+
+        let recording = recordingBuffer.stopRecording()
+        transcriptDuringRecording = recording.transcript
+        foodLoggingState = .processing
+
+        NSLog("[FoodLog] processing \(recording.frames.count) frames, transcript: \(recording.transcript.prefix(100))")
+
+        // Deduplicate frames
+        let uniqueFrames = FrameDeduplicator.deduplicate(recording.frames)
+
+        // Send to Gemini
+        Task {
+            do {
+                let result = try await gemini.analyzeFoodImages(
+                    images: uniqueFrames,
+                    transcript: recording.transcript
+                )
+                self.foodResults = result
+                self.foodLoggingState = .results
+
+                // Announce results
+                let itemNames = result.items.map(\.name).joined(separator: ", ")
+                if result.items.isEmpty {
+                    self.speaker.speak("No food detected.")
+                } else {
+                    self.speaker.speak("Found \(result.items.count) items: \(itemNames)")
+                }
+            } catch {
+                NSLog("[FoodLog] Gemini error: \(error)")
+                self.showStreamError("Analysis failed: \(error.localizedDescription)")
+                self.foodLoggingState = .idle
+            }
+        }
+    }
+
+    /// Reset to idle state after viewing results.
+    func dismissResults() {
+        foodLoggingState = .idle
+        foodResults = nil
+    }
+
+    private func stopRecordingTimer() {
+        recordingTimer?.invalidate()
+        recordingTimer = nil
+    }
+
+    // MARK: - Listeners
 
     private func setupListeners() {
         stateListenerToken = streamSession.statePublisher.listen { [weak self] state in
@@ -124,23 +219,23 @@ final class GlassesStreamManager: ObservableObject {
         }
 
         videoFrameListenerToken = streamSession.videoFramePublisher.listen { [weak self] videoFrame in
-            // Get the CMSampleBuffer directly — no UIImage conversion needed for pipeline.
-            // This is much faster and gives Vision the native pixel buffer.
             let sampleBuffer = videoFrame.sampleBuffer
 
             Task { @MainActor [weak self] in
                 guard let self else { return }
 
-                // Update UI with UIImage (only for display)
                 if let image = videoFrame.makeUIImage() {
                     self.currentFrame = image
                     if !self.hasReceivedFirstFrame {
                         NSLog("[GlassesStream] first frame received! size=\(image.size)")
                         self.hasReceivedFirstFrame = true
                     }
+
+                    // Feed frame to recording buffer if active
+                    self.recordingBuffer.addFrame(image)
                 }
 
-                // Feed pixel buffer directly to pipeline on background queue
+                // Feed to pipeline for transcription
                 if let coordinator = self.coordinator,
                    let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) {
                     self.videoProcessingQueue.async {
