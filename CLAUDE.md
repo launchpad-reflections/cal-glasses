@@ -1,161 +1,148 @@
-# Reflections — Monolith
+# Cal Reflections — Smart Calorie Logging via Meta Ray-Ban Glasses
 
 ## Vision
 
-Reflections is an AI-powered wearable assistant built on Meta Ray-Ban glasses. It sees what you see, hears what you hear, and whispers real-time coaching through the glasses' speakers — turning every conversation into a guided interaction.
+Cal Reflections turns Meta Ray-Ban glasses into a hands-free calorie logging device. Instead of manually photographing every meal and typing into an app, you just look at your food, say what you're eating, and the system handles the rest — identifying food, reading nutrition labels, estimating portions, and logging everything into Cal AI automatically.
 
-The system combines on-device ML (face recognition, voice activity detection, live transcription) with cloud AI (Claude API for contextual reasoning) and calendar integration to deliver situational awareness that feels like a superpower.
+## How It Works
 
-## Cal-Reflections: Calendar-Aware Conversational AI
+### User Flow
 
-This branch (`cal-reflections`) extends the core Reflections pipeline with a calendar-integrated coaching layer:
+1. **Start streaming** from the glasses tab in the app
+2. **Activate "detect food" mode** — either say "log food" or make a hand gesture
+3. **For the next ~30 seconds**, the system records what you see and say:
+   - **Option A: Nutrition labels** — Look at the label/ingredient info and say how much you're having (e.g., "I had 30 chips" while looking at a Doritos bag)
+   - **Option B: Plated food** — Just look at your dish if there's no label
+   - **Option C: Water** — Say "I drank a glass of water"
+4. **AI pipeline processes the recording** — combining visual frames + audio transcript to understand what and how much you consumed
+5. **Results are logged into Cal AI** — the system fills in the Cal AI app with the right data
 
-### Core Loop
-
-1. **Pre-meeting briefing**: Before a calendar event, the glasses whisper context — who you're meeting, what was discussed last time, key talking points, and your goals for this interaction.
-
-2. **Live conversation coaching**: During the meeting, the system listens via transcription, identifies speakers via face recognition, and provides real-time whispered cues — suggested questions, fact corrections, follow-up reminders, or social cues.
-
-3. **Post-meeting memory**: After the conversation, key takeaways, action items, and relationship notes are persisted to a local memory layer, available for the next interaction with that person.
-
-### Architecture (Planned)
+### AI Pipeline (30-Second Clip Processing)
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    Meta Ray-Ban Glasses                   │
-│  Camera (720p) ──► iPhone ◄── Microphone (HFP 8kHz)    │
-│                    Speakers ◄── TTS Audio                │
-└─────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────┐
+│              30-Second Recording Window                    │
+│                                                            │
+│  Glasses Camera (720p @ 24fps) ──► Video frames           │
+│  Glasses Mic (HFP 8kHz→16kHz) ──► Audio / transcript      │
+└──────────────────────────────────────────────────────────┘
                           │
                           ▼
-┌─────────────────────────────────────────────────────────┐
-│                  On-Device Pipeline                       │
-│                                                           │
-│  Video ──► Face Detection (Vision) ──► Face Recognition  │
-│            (MobileFaceNet)                                │
-│                                                           │
-│  Audio ──► VAD (Silero) ──► Transcription (Moonshine)   │
-│            Speaker State (FusionEngine)                   │
-└─────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────┐
+│              Frame + Audio Analysis                        │
+│                                                            │
+│  1. Deduplicate frames — extract unique food images:       │
+│     - Nutrition labels (prefer the side with more info)    │
+│     - Plated dishes                                        │
+│     - Drinks / beverages                                   │
+│     No duplicates (e.g., front + back of same package      │
+│     → keep only the nutrition facts side)                  │
+│                                                            │
+│  2. Combine visual + audio cues:                           │
+│     - "I had 30 chips" + Doritos bag in frame              │
+│       → calculate servings from label                      │
+│     - "Half a plate of pasta" + dish in frame              │
+│       → estimate calories from visual                      │
+│     - "Two glasses of water"                               │
+│       → log water intake                                   │
+│                                                            │
+│  3. Categorize each item:                                  │
+│     - LABELED: has nutrition info visible → extract values  │
+│     - DISH: no label, visual estimation needed              │
+│     - WATER: hydration tracking                             │
+└──────────────────────────────────────────────────────────┘
                           │
                           ▼
-┌─────────────────────────────────────────────────────────┐
-│                  Calendar + Context Layer                 │
-│                                                           │
-│  EventKit ──► Upcoming meetings, attendees, location     │
-│  FaceGallery ──► Match recognized faces to contacts      │
-│  MemoryStore ──► Past interactions, notes, preferences   │
-└─────────────────────────────────────────────────────────┘
-                          │
-                          ▼
-┌─────────────────────────────────────────────────────────┐
-│                  AI Reasoning (Cloud)                     │
-│                                                           │
-│  Claude API ──► Contextual prompt generation             │
-│    Inputs: calendar context, identified faces,           │
-│            live transcript, memory/history                │
-│    Output: coaching whispers, briefings, follow-ups      │
-└─────────────────────────────────────────────────────────┘
-                          │
-                          ▼
-┌─────────────────────────────────────────────────────────┐
-│                  Audio Output                             │
-│                                                           │
-│  GlassesSpeaker (AVSpeechSynthesizer) ──► HFP speakers  │
-│  Future: ElevenLabs / custom voice for natural whispers  │
-└─────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────┐
+│              Cal AI Integration                            │
+│                                                            │
+│  For LABELED items:                                        │
+│    → Upload nutrition label photo to Cal AI                 │
+│    → Verify/adjust detected values (servings, calories)    │
+│    → Correct any misreads in the app UI                    │
+│                                                            │
+│  For DISH items:                                           │
+│    → Upload dish photo using Cal AI's photo estimation      │
+│    → Let Cal AI's built-in food recognition handle it      │
+│                                                            │
+│  For WATER:                                                │
+│    → Use Cal AI's water tracking UI element                 │
+│    → Log the specified amount                               │
+└──────────────────────────────────────────────────────────┘
 ```
 
-### Key Components to Build
+### Key Technical Challenges
+
+| Challenge | Approach |
+|-----------|----------|
+| Frame deduplication | Perceptual hashing or CLIP embeddings to group similar frames, keep the most informative one per food item |
+| Nutrition label OCR | Vision framework text recognition or cloud OCR on the best frame |
+| Portion estimation from speech | Transcript parsing — map spoken quantities to serving sizes using label data |
+| Cal AI automation | iOS accessibility APIs or Shortcuts integration to fill in the Cal AI app programmatically |
+| 30-second window management | Circular buffer of frames + audio, triggered by voice command or gesture |
+| Food vs non-food filtering | Vision classifier or CLIP zero-shot to discard frames without food |
+
+### Components to Build
 
 | Component | Status | Description |
 |-----------|--------|-------------|
-| Glasses streaming | Done | MWDAT SDK, 720p raw, 24fps |
-| Face detection + recognition | Done | Vision + MobileFaceNet pipeline |
-| Voice activity detection | Done | Silero VAD via ONNX Runtime |
-| Live transcription | Done | Moonshine v2 small-streaming |
+| Glasses streaming (720p) | Done | MWDAT SDK, raw codec, 24fps |
+| HFP audio capture | Done | 8kHz → 16kHz resampled |
+| Live transcription | Done | Moonshine v2 on-device |
 | TTS to glasses | Done | AVSpeechSynthesizer over HFP |
-| Calendar integration | Planned | EventKit read access, upcoming events |
-| Contact ↔ Face linking | Planned | Map FaceGallery entries to calendar attendees |
-| Memory/history store | Planned | Persist conversation summaries per person |
-| Claude API integration | Planned | Generate contextual coaching from combined signals |
-| Pre-meeting briefing | Planned | Trigger briefing N minutes before calendar event |
-| Live coaching whispers | Planned | Real-time contextual suggestions during conversation |
-| Post-meeting summary | Planned | Auto-generate takeaways and action items |
+| Voice trigger ("log food") | Planned | Keyword detection in transcript stream |
+| 30-second recording buffer | Planned | Circular buffer of frames + audio with start/stop trigger |
+| Frame deduplication | Planned | Extract unique food images from clip |
+| Nutrition label detection | Planned | Identify frames containing nutrition labels |
+| Visual + audio fusion | Planned | Combine transcript quantities with visual food identification |
+| Cal AI integration | Planned | Automate data entry into Cal AI app |
+| Water tracking | Planned | Parse water mentions from transcript, log via Cal AI |
+| Hand gesture detection | Planned | Optional activation method alongside voice |
 
-### User Scenarios
+## Existing Infrastructure (from Reflections core)
 
-**Scenario 1: Conference Networking**
-> You walk up to someone at a conference. The glasses recognize their face from a previous enrollment. Claude whispers: "That's Sarah Chen, CTO at Meridian. Last time you discussed their migration to Rust. She mentioned they're hiring senior engineers." You now have perfect recall.
+This branch builds on the existing monolith codebase:
 
-**Scenario 2: Investor Meeting**
-> 10 minutes before your pitch, the glasses whisper a briefing based on your calendar: "Meeting with Sequoia — partner is Alex. Your deck focuses on the $2M ARR milestone. Last meeting they asked about churn metrics — have your answer ready." During the meeting, as you discuss pricing, Claude whispers: "Alex seems skeptical — pivot to the unit economics slide."
-
-**Scenario 3: Daily Standups**
-> The glasses recognize each team member as they speak, transcribe their updates, and after the meeting auto-generate a summary with action items sent to your notes app.
-
-## Project Structure
+### Project Structure
 
 ```
 monolith/
 ├── ActiveSpeaker/                    # iOS app (Xcode project)
-│   ├── ActiveSpeaker.xcodeproj/
 │   ├── ActiveSpeaker/
 │   │   ├── App/                      # App entry point, Info.plist
-│   │   ├── Capture/                  # Camera + audio capture (CaptureManager, CameraPreviewView)
+│   │   ├── Capture/                  # Camera + audio capture
 │   │   ├── Glasses/                  # Meta glasses integration (MWDAT SDK)
-│   │   │   ├── GlassesConnectionManager.swift  # Registration + device discovery
-│   │   │   ├── GlassesStreamManager.swift      # Video/audio streaming + pipeline feed
-│   │   │   ├── GlassesAudioCapture.swift       # HFP Bluetooth mic capture
-│   │   │   ├── GlassesSpeaker.swift            # TTS output to glasses speakers
-│   │   │   ├── GlassesPrompt.swift             # Prompt text loader
-│   │   │   └── GlassesConnectionState.swift    # Connection state enum
-│   │   ├── Models/                   # Data models (SpeakerState, IdentifiedFace, FaceGallery)
-│   │   ├── Pipeline/                 # Core processing (PipelineCoordinator, FusionEngine)
-│   │   ├── Processors/              # ML processors (SileroVAD, MouthMovement, FaceEmbedding, Moonshine)
+│   │   │   ├── GlassesConnectionManager.swift
+│   │   │   ├── GlassesStreamManager.swift
+│   │   │   ├── GlassesAudioCapture.swift
+│   │   │   ├── GlassesSpeaker.swift
+│   │   │   └── GlassesPrompt.swift
+│   │   ├── Models/                   # Data models
+│   │   ├── Pipeline/                 # PipelineCoordinator, FusionEngine
+│   │   ├── Processors/              # SileroVAD, MouthMovement, FaceEmbedding, Moonshine
 │   │   ├── UI/                       # SwiftUI views
-│   │   ├── Utilities/               # RollingBuffer, helpers
-│   │   └── prompts/                 # Markdown prompt files for TTS
-│   ├── MobileFaceNet.mlpackage/     # CoreML face embedding model
-│   ├── silero_vad.onnx              # Voice activity detection model
-│   └── small-streaming-en/          # Moonshine transcription models (not in git)
-├── scripts/                          # Python scripts for model conversion
-├── MODELS.md                         # Instructions to download large model files
+│   │   └── prompts/                 # Prompt text files
+│   ├── MobileFaceNet.mlpackage/
+│   ├── silero_vad.onnx
+│   └── small-streaming-en/          # Moonshine models (not in git)
+├── scripts/
+├── MODELS.md
 └── CLAUDE.md                         # This file
 ```
+
+### Meta Glasses Integration
+
+- **SDK**: MWDAT 0.5.0 (`https://github.com/facebook/meta-wearables-dat-ios`)
+- **Products**: `MWDATCore`, `MWDATCamera`
+- **Video**: `.raw` codec, `.high` resolution (720x1280), 24fps
+- **Audio in**: HFP Bluetooth mic → 16kHz mono
+- **Audio out**: `AVSpeechSynthesizer` → HFP speakers
+- **Pipeline**: video frames fed via `CMSampleBuffer` → `CVPixelBuffer`
 
 ## Building
 
 1. Open `ActiveSpeaker/ActiveSpeaker.xcodeproj` in Xcode
 2. Download Moonshine models (see `MODELS.md`)
-3. Add MWDAT SPM package if not already resolved: `https://github.com/facebook/meta-wearables-dat-ios` (0.5.0+)
+3. Add MWDAT SPM package: `https://github.com/facebook/meta-wearables-dat-ios` (0.5.0+)
 4. Set signing team and bundle identifier
-5. Build and run on a physical iPhone (iOS 17+, A13 chip or later)
-
-## Meta Glasses Integration
-
-Uses **Meta Wearables Device Access Toolkit (MWDAT) 0.5.0** SDK:
-- SPM package: `https://github.com/facebook/meta-wearables-dat-ios`
-- Products: `MWDATCore`, `MWDATCamera`
-- Connection: `Wearables.configure()` → `startRegistration()` → Meta AI app callback → `handleUrl()`
-- Video: `StreamSession` with `.raw` codec, `.high` resolution (720x1280), 24fps
-- Audio input: HFP Bluetooth mic, resampled 8kHz → 16kHz
-- Audio output: `AVSpeechSynthesizer` routes TTS through HFP to glasses speakers
-- Video frames fed to pipeline via `CMSampleBuffer` → `CVPixelBuffer` (zero-copy)
-
-## Thread Safety
-
-- Audio and video processing on separate `DispatchQueue`s (`.userInteractive`)
-- Transcription on its own serial queue
-- Cross-queue state protected by `os_unfair_lock`
-- `FaceGallery` persistence protected by `os_unfair_lock`
-- All `@Published` UI state updated on main thread
-
-## Models
-
-Large model files are gitignored — see `MODELS.md` for download instructions:
-- `small-streaming-en/` — Moonshine v2 transcription (~160MB)
-
-Models tracked in git:
-- `silero_vad.onnx` — Silero voice activity detection (~2.3MB)
-- `MobileFaceNet.mlpackage/` — face embedding model
+5. Build and run on physical iPhone (iOS 17+)
