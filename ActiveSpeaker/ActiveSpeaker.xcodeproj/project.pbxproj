@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 56;
+	objectVersion = 70;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -22,6 +22,8 @@
 		451968C82F70C2A300DCA269 /* GlassesConnectionState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 451968C32F70C2A300DCA269 /* GlassesConnectionState.swift */; };
 		451968C92F70C2A300DCA269 /* GlassesAudioCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 451968C12F70C2A300DCA269 /* GlassesAudioCapture.swift */; };
 		451968CD2F71103C00DCA269 /* GlassesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 451968CC2F71103C00DCA269 /* GlassesView.swift */; };
+		451968D02F72588000DCA269 /* GlassesPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 451968CE2F72588000DCA269 /* GlassesPrompt.swift */; };
+		451968D12F72588000DCA269 /* GlassesSpeaker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 451968CF2F72588000DCA269 /* GlassesSpeaker.swift */; };
 		7171E3742F6F8F7B0034B4AA /* onnxruntime in Frameworks */ = {isa = PBXBuildFile; productRef = 7171E3732F6F8F7B0034B4AA /* onnxruntime */; };
 		7171E3762F6F8F7B0034B4AA /* onnxruntime_extensions in Frameworks */ = {isa = PBXBuildFile; productRef = 7171E3752F6F8F7B0034B4AA /* onnxruntime_extensions */; };
 		7171E3782F6F8FF10034B4AA /* silero_vad.onnx in Resources */ = {isa = PBXBuildFile; fileRef = 7171E3772F6F8FF10034B4AA /* silero_vad.onnx */; };
@@ -66,6 +68,8 @@
 		451968C32F70C2A300DCA269 /* GlassesConnectionState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassesConnectionState.swift; sourceTree = "<group>"; };
 		451968C42F70C2A300DCA269 /* GlassesStreamManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassesStreamManager.swift; sourceTree = "<group>"; };
 		451968CC2F71103C00DCA269 /* GlassesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassesView.swift; sourceTree = "<group>"; };
+		451968CE2F72588000DCA269 /* GlassesPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassesPrompt.swift; sourceTree = "<group>"; };
+		451968CF2F72588000DCA269 /* GlassesSpeaker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassesSpeaker.swift; sourceTree = "<group>"; };
 		7171E3772F6F8FF10034B4AA /* silero_vad.onnx */ = {isa = PBXFileReference; lastKnownFileType = file; path = silero_vad.onnx; sourceTree = "<group>"; };
 		7171E3812F6FA8A70034B4AA /* TranscriptionProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptionProvider.swift; sourceTree = "<group>"; };
 		7171E3832F6FA8BE0034B4AA /* MoonshineTranscriber.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoonshineTranscriber.swift; sourceTree = "<group>"; };
@@ -95,6 +99,10 @@
 		B20000080000000000000008 /* SnapshotPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapshotPreviewView.swift; sourceTree = "<group>"; };
 		C20000010000000000000001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		451968D42F7258E000DCA269 /* prompts */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = prompts; sourceTree = "<group>"; };
+/* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		A40000010000000000000001 /* Frameworks */ = {
@@ -130,6 +138,8 @@
 		451968C52F70C2A300DCA269 /* Glasses */ = {
 			isa = PBXGroup;
 			children = (
+				451968CE2F72588000DCA269 /* GlassesPrompt.swift */,
+				451968CF2F72588000DCA269 /* GlassesSpeaker.swift */,
 				451968C12F70C2A300DCA269 /* GlassesAudioCapture.swift */,
 				451968C22F70C2A300DCA269 /* GlassesConnectionManager.swift */,
 				451968C32F70C2A300DCA269 /* GlassesConnectionState.swift */,
@@ -152,6 +162,7 @@
 		A50000020000000000000002 /* ActiveSpeaker */ = {
 			isa = PBXGroup;
 			children = (
+				451968D42F7258E000DCA269 /* prompts */,
 				451968C52F70C2A300DCA269 /* Glasses */,
 				A50000030000000000000003 /* App */,
 				A50000040000000000000004 /* Capture */,
@@ -262,6 +273,9 @@
 			);
 			dependencies = (
 			);
+			fileSystemSynchronizedGroups = (
+				451968D42F7258E000DCA269 /* prompts */,
+			);
 			name = ActiveSpeaker;
 			packageProductDependencies = (
 				7171E3732F6F8F7B0034B4AA /* onnxruntime */,
@@ -353,6 +367,8 @@
 				7171E3862F6FA8D40034B4AA /* TranscriptOverlayView.swift in Sources */,
 				451968C62F70C2A300DCA269 /* GlassesStreamManager.swift in Sources */,
 				451968C72F70C2A300DCA269 /* GlassesConnectionManager.swift in Sources */,
+				451968D02F72588000DCA269 /* GlassesPrompt.swift in Sources */,
+				451968D12F72588000DCA269 /* GlassesSpeaker.swift in Sources */,
 				451968C82F70C2A300DCA269 /* GlassesConnectionState.swift in Sources */,
 				451968C92F70C2A300DCA269 /* GlassesAudioCapture.swift in Sources */,
 				A1000013000000000000000D /* RollingBuffer.swift in Sources */,

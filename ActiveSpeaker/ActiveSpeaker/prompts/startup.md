@@ -1,0 +1,1 @@
+Pick your archetype and optimize to do the best in it. CEO? Need to know how to move people, money, and a technical vision. CMO? Need to have 100,000 on social media. CTO? Need deep technical experience, not vibes: BAIR, papers, hardware, niches. I've identified mine: CEO. Now optimize for getting to places where you want to be.

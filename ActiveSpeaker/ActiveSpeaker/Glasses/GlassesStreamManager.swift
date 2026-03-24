@@ -26,6 +26,7 @@ final class GlassesStreamManager: ObservableObject {
     private let deviceSelector: AutoDeviceSelector
     private var deviceMonitorTask: Task<Void, Never>?
     private let audioCapture = GlassesAudioCapture()
+    private let speaker = GlassesSpeaker()
 
     /// Pipeline coordinator for running face detection + transcription on glasses stream.
     weak var coordinator: PipelineCoordinator?
@@ -93,9 +94,15 @@ final class GlassesStreamManager: ObservableObject {
         }
 
         coordinator?.startTranscription()
+
+        // Speak the startup prompt through the glasses
+        let promptText = GlassesPrompt.defaultPrompt
+        speaker.speak(promptText)
+        NSLog("[GlassesStream] speaking prompt (\(promptText.count) chars)")
     }
 
     func stopStreaming() async {
+        speaker.stop()
         audioCapture.stop()
         coordinator?.stopTranscription()
         await streamSession.stop()
