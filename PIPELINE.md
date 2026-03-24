@@ -14,7 +14,8 @@ Cal Reflections uses Meta Ray-Ban glasses to capture what you see and say, then 
          │
          ▼
 3. 10-second recording window begins
-   ├── Frames captured at 1fps (from 24fps glasses stream)
+   ├── High-quality photos captured every 3s via capturePhoto()
+   ├── Stream frames captured at 1fps (fallback)
    ├── Audio transcribed in real-time by Moonshine v2
    └── Transcript fed into recording buffer
          │
@@ -22,18 +23,53 @@ Cal Reflections uses Meta Ray-Ban glasses to capture what you see and say, then 
 4. TTS: "Tracking complete. Analyzing."
          │
          ▼
-5. Frame deduplication (perceptual hashing)
-   Input: ~10 raw frames
-   Output: 5-8 unique frames
+5. Image selection:
+   ├── If photos captured → use those (~4 high-quality JPEGs)
+   └── If no photos → fallback to deduplicated stream frames
          │
          ▼
-6. Gemini API call
-   Input: unique frames (base64 JPEG) + transcript text
+6. Gemini API call (single HTTPS POST)
+   Input: images (base64 JPEG @ 92%) + transcript text
    Output: structured JSON with food items
          │
          ▼
 7. Results displayed with photos, portions, calories
    TTS reads back: "Found 2 items: Doritos, water"
+```
+
+## Two Image Pipelines
+
+### Pipeline A: Photo Capture (Primary — Higher Quality)
+
+The MWDAT SDK has two separate image paths from the glasses:
+
+1. **Video stream** (`videoFramePublisher`): 24fps at 720x1280, compressed to ~500kbps over Bluetooth. Optimized for low-latency live preview. Every frame is degraded.
+
+2. **Photo capture** (`photoDataPublisher`): A dedicated still photo request to the glasses hardware. The glasses use their camera sensor to take a full JPEG photo and send it back. This is NOT pulled from the video stream — it's a distinct capture event with better quality.
+
+During the 10-second recording window:
+- `capturePhoto(format: .jpeg)` fires at **0s, 3s, 6s, 9s** → ~4 photos
+- Each photo arrives via `photoDataPublisher` as raw JPEG `Data`
+- Converted to `UIImage` and stored in `capturedPhotos` array
+
+### Pipeline B: Stream Frame Capture (Fallback — Lower Quality)
+
+If photo capture fails (e.g., glasses don't support it, timing issues):
+- The `videoFramePublisher` delivers frames at 24fps
+- `FoodRecordingBuffer` samples 1 frame per second → ~10 frames
+- `FrameDeduplicator` reduces to 5-8 unique frames using perceptual hashing
+- These lower-quality frames are sent to Gemini instead
+
+### Selection Logic
+
+```swift
+if !capturedPhotos.isEmpty {
+    // Use high-quality photos
+    imagesToAnalyze = capturedPhotos
+} else {
+    // Fallback to deduplicated stream frames
+    imagesToAnalyze = FrameDeduplicator.deduplicate(recording.frames)
+}
 ```
 
 ## Component Details
@@ -46,29 +82,27 @@ When triggered:
 - Sets `foodLoggingTriggered = true` (observed by the view)
 - Starts a 15-second cooldown to prevent re-triggering during recording
 
-### 2. Recording Buffer (`FoodRecordingBuffer.swift`)
+### 2. Audio Transcription
 
-During the 10-second window:
+**Capture path:** Glasses mic (8kHz HFP Bluetooth) → `GlassesAudioCapture` resamples to 16kHz mono → `PipelineCoordinator.processAudio()` → `SileroVAD` (voice activity detection) + `MoonshineTranscriber` (speech-to-text)
 
-**Frames:** The glasses stream at 24fps, but we only keep 1 frame per second (throttled by timestamp comparison). This gives ~10 frames for a 10-second window.
+**During recording:** Every time `PipelineCoordinator.transcriptText` updates (from Moonshine), the `CalStreamView` observes the change via `.onChange` and calls `streamVM.feedTranscript(text)` which stores it in `FoodRecordingBuffer`.
 
-**Transcript:** Every time `PipelineCoordinator.transcriptText` updates, the new text is fed into the buffer. Moonshine updates the current line in-place (each update replaces the previous partial), so we track the latest version and append when a new line starts.
+**Transcript handling:** Moonshine updates the current line in-place (each update replaces the previous partial). The buffer tracks the latest version and appends finalized lines. When recording stops, the full accumulated transcript is included in the Gemini request.
 
-### 3. Frame Deduplication (`FrameDeduplicator.swift`)
+### 3. Frame Deduplication (`FrameDeduplicator.swift`) — Fallback Only
 
-Takes ~10 frames and reduces to 5-8 unique ones.
+Used only when photo capture fails. Takes ~10 stream frames and reduces to 5-8 unique ones.
 
 **Algorithm:**
-1. **Perceptual hash (pHash):** Each frame is resized to 8x8 grayscale. Each pixel is compared to the mean — above = 1, below = 0 — producing a 64-bit fingerprint.
-2. **Grouping:** Frames with hamming distance < 12 bits are considered "same scene" and grouped together.
-3. **Sharpness selection:** From each group, the sharpest frame is kept. Sharpness is measured by Laplacian variance (high-frequency content = sharper).
-4. **Cap at 8:** Top 8 sharpest unique frames are sent to Gemini.
-
-**Why this matters:** If you stare at a Doritos bag for 5 seconds, you get 1 frame of Doritos instead of 5 near-identical frames. This saves Gemini tokens and improves response quality.
+1. **Perceptual hash (pHash):** Each frame → 8x8 grayscale → compare each pixel to mean → 64-bit fingerprint
+2. **Grouping:** Frames with hamming distance < 12 bits are "same scene"
+3. **Sharpness selection:** From each group, keep the sharpest (Laplacian variance)
+4. **Cap at 8** sharpest unique frames
 
 ### 4. Gemini API Call (`GeminiService.swift`)
 
-**Model:** `gemini-2.5-flash` (Google's latest flash model, free tier compatible)
+**Model:** `gemini-2.5-flash`
 
 **Endpoint:**
 ```
@@ -81,9 +115,10 @@ POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:ge
   "contents": [{
     "parts": [
       {"text": "<system prompt with transcript>"},
-      {"inline_data": {"mime_type": "image/jpeg", "data": "<base64 frame 0>"}},
-      {"inline_data": {"mime_type": "image/jpeg", "data": "<base64 frame 1>"}},
-      ...
+      {"inline_data": {"mime_type": "image/jpeg", "data": "<base64 photo 0>"}},
+      {"inline_data": {"mime_type": "image/jpeg", "data": "<base64 photo 1>"}},
+      {"inline_data": {"mime_type": "image/jpeg", "data": "<base64 photo 2>"}},
+      {"inline_data": {"mime_type": "image/jpeg", "data": "<base64 photo 3>"}}
     ]
   }],
   "generationConfig": {
@@ -93,42 +128,43 @@ POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:ge
 }
 ```
 
-Images are JPEG at 80% quality, typically 80-100KB each. Total payload for 8 images ≈ 800KB of base64.
-
-**The `responseMimeType: "application/json"` forces Gemini to return valid JSON** — no markdown fences, no explanation, just the data.
+Images are JPEG at **92% quality**. The `responseMimeType: "application/json"` forces Gemini to return valid JSON — no markdown, no explanation.
 
 ### 5. Gemini Prompt
 
 The prompt tells Gemini:
 
-1. **Context:** "You receive N images from a recording of someone's meal, captured through smart glasses. Images are numbered 0 to N-1."
+- **Context:** "You receive N images from a recording of someone's meal, captured through smart glasses. Images are numbered 0 to N-1."
+- **Instructions:**
+  - Identify all food/drink visible with specific brand names
+  - Cross-reference with transcript (e.g., "I had 30 chips" + Doritos bag → 2 servings)
+  - Detect nutrition labels and read them — summarize key facts
+  - Estimate calories for total amount consumed
+  - Pick the best image for each item (prefer nutrition label side)
+  - Don't duplicate items across frames
+  - Default portions to 1.0, override from transcript
+- **Transcript:** The actual words spoken during the 10 seconds. If empty: "(no speech detected)"
 
-2. **Instructions:**
-   - Identify all food/drink visible
-   - Cross-reference with transcript (e.g., "I had 30 chips" + Doritos bag → calculate servings)
-   - Detect nutrition labels and read them
-   - Estimate calories
-   - Pick the best image for each item (prefer nutrition label side)
-   - Don't duplicate items across frames
+### 6. Output Schema
 
-3. **Transcript:** The actual words spoken during the 10-second window. If empty: "(no speech detected)"
+Each food item in the response:
 
-4. **Output schema:** Strict JSON with these fields per item:
-   - `name` — specific brand/food name
-   - `type` — "packaged" / "dish" / "drink"
-   - `quantity` — human-readable (e.g., "2 servings", "1 plate")
-   - `portions` — numeric (default 1.0, derived from transcript)
-   - `calories` — estimated total for amount consumed
-   - `quantity_ml` — for drinks only
-   - `has_nutrition_label` — whether a label was visible
-   - `needs_manual_entry` — whether the user should verify
-   - `confidence` — 0.0 to 1.0
-   - `best_image_index` — which frame best shows this item
-   - `nutrition_summary` — brief facts if label visible (e.g., "140cal, 8g fat per serving")
+| Field | Type | Description |
+|-------|------|-------------|
+| `name` | string | Specific brand/food name (e.g., "Doritos Nacho Cheese") |
+| `type` | string | "packaged" / "dish" / "drink" |
+| `quantity` | string | Human-readable (e.g., "2 servings", "1 plate") |
+| `portions` | number | Numeric portions consumed (default 1.0, from transcript) |
+| `calories` | number? | Estimated total calories for amount consumed |
+| `quantity_ml` | number? | For drinks only, in milliliters |
+| `has_nutrition_label` | bool | Whether a label was visible in the images |
+| `needs_manual_entry` | bool | Whether the user should verify |
+| `confidence` | number | 0.0 to 1.0 |
+| `best_image_index` | number? | Which image best shows this item (0-indexed) |
+| `nutrition_summary` | string? | Brief facts if label visible (e.g., "140cal, 8g fat per serving") |
 
-### 6. Response Parsing (`FoodAnalysisResult.swift`)
+### 7. Example Response
 
-Gemini returns JSON like:
 ```json
 {
   "items": [
@@ -142,7 +178,7 @@ Gemini returns JSON like:
       "has_nutrition_label": true,
       "needs_manual_entry": false,
       "confidence": 0.9,
-      "best_image_index": 3,
+      "best_image_index": 2,
       "nutrition_summary": "140cal, 8g fat, 17g carbs, 2g protein per serving"
     },
     {
@@ -162,27 +198,41 @@ Gemini returns JSON like:
 }
 ```
 
-This is decoded into `FoodAnalysisResult` → `[FoodItem]`. Then `attachImages(from:)` maps each `best_image_index` to the actual `UIImage` from the deduped frames.
+### 8. UI Display (`CalGlassesView.swift`)
 
-### 7. UI Display (`CalGlassesView.swift`)
+**Results list:** Each food item shows as a tappable card with thumbnail (from `best_image_index`), name, quantity, portions, calories, and confidence.
 
-**Results list:** Each food item shows as a tappable card with thumbnail, name, quantity, portions, calories.
-
-**Detail view:** Tapping a card opens a full sheet with:
+**Detail view (tap to expand):** Full sheet with:
 - Full-size photo from the glasses
-- Name, type, quantity, portions, calories
+- Name, type icon, quantity, portions, calories, volume
 - Confidence score
 - Nutrition label detection status
-- Full nutrition summary (if label was read)
+- Full nutrition summary if label was read
 
-## Audio Path
+### 9. TTS Feedback
 
-The glasses microphone streams at 8kHz via HFP Bluetooth. `GlassesAudioCapture` resamples to 16kHz mono and feeds to:
-1. **SileroVAD** — voice activity detection (speech probability)
-2. **MoonshineTranscriber** — on-device speech-to-text
+Throughout the flow, `GlassesSpeaker` (using `AVSpeechSynthesizer` routed through HFP Bluetooth) provides audio feedback through the glasses speakers:
+- "Ready. Say log food to start tracking."
+- "Tracking started"
+- "Tracking complete. Analyzing."
+- "Found N items: [item names]" or "No food detected."
 
-The transcript is published to `PipelineCoordinator.transcriptText`, which the view observes and feeds into `FoodRecordingBuffer.addTranscript()` during recording.
+## Architecture Summary
 
-## API Key
+```
+Meta Glasses Hardware
+├── Camera sensor
+│   ├── Video stream (24fps, 720x1280, Bluetooth) → live display on phone
+│   └── Photo capture (on-demand JPEG, higher quality) → food analysis
+└── Microphone (HFP 8kHz)
+    └── Resampled to 16kHz → SileroVAD + MoonshineTranscriber
 
-The Gemini API key is hardcoded in `GeminiService.swift` for development. For production, move to a gitignored config file or keychain.
+iPhone Processing
+├── Live display: stream frames → SwiftUI Image view
+├── Transcription: audio → Moonshine v2 → text (continuous)
+├── Voice trigger: transcript → keyword match "log food"
+└── Food logging (10-second window):
+    ├── Photos: capturePhoto() at 0s, 3s, 6s, 9s → ~4 JPEGs
+    ├── Transcript: accumulated during window
+    └── → Gemini 2.5 Flash API → structured JSON → UI results
+```

@@ -56,6 +56,11 @@ final class GlassesStreamManager: ObservableObject {
     private var recordingTimer: Timer?
     private var recordingSecondsLeft = 0
 
+    // Photo capture: higher quality than stream frames
+    private var capturedPhotos: [UIImage] = []
+    private var photoListenerToken: AnyListenerToken?
+    private var photoCaptureTimer: Timer?
+
     init(wearables: WearablesInterface) {
         self.wearables = wearables
         self.deviceSelector = AutoDeviceSelector(wearables: wearables)
@@ -134,12 +139,23 @@ final class GlassesStreamManager: ObservableObject {
 
         speaker.speak("Tracking started")
         recordingBuffer.startRecording()
+        capturedPhotos.removeAll()
         recordingSecondsLeft = 10
         foodLoggingState = .recording(secondsLeft: 10)
         transcriptDuringRecording = ""
         foodResults = nil
 
-        NSLog("[FoodLog] recording started")
+        NSLog("[FoodLog] recording started (with photo capture)")
+
+        // Capture a high-quality photo immediately and every 3 seconds
+        streamSession.capturePhoto(format: .jpeg)
+        photoCaptureTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                self.streamSession.capturePhoto(format: .jpeg)
+                NSLog("[FoodLog] photo capture triggered")
+            }
+        }
 
         recordingTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
             Task { @MainActor [weak self] in
@@ -161,26 +177,35 @@ final class GlassesStreamManager: ObservableObject {
 
     private func finishFoodLogging() {
         stopRecordingTimer()
+        photoCaptureTimer?.invalidate()
+        photoCaptureTimer = nil
         speaker.speak("Tracking complete. Analyzing.")
 
         let recording = recordingBuffer.stopRecording()
         transcriptDuringRecording = recording.transcript
         foodLoggingState = .processing
 
-        NSLog("[FoodLog] processing \(recording.frames.count) frames, transcript: \(recording.transcript.prefix(100))")
+        // Use captured photos if available (higher quality), fall back to stream frames
+        let imagesToAnalyze: [UIImage]
+        if !capturedPhotos.isEmpty {
+            NSLog("[FoodLog] using \(capturedPhotos.count) captured photos (high quality)")
+            imagesToAnalyze = capturedPhotos
+        } else {
+            NSLog("[FoodLog] no photos captured, falling back to \(recording.frames.count) stream frames")
+            imagesToAnalyze = FrameDeduplicator.deduplicate(recording.frames)
+        }
 
-        // Deduplicate frames
-        let uniqueFrames = FrameDeduplicator.deduplicate(recording.frames)
+        NSLog("[FoodLog] sending \(imagesToAnalyze.count) images, transcript: '\(recording.transcript.prefix(100))'")
 
         // Send to Gemini
         Task {
             do {
                 var result = try await gemini.analyzeFoodImages(
-                    images: uniqueFrames,
+                    images: imagesToAnalyze,
                     transcript: recording.transcript
                 )
                 // Attach actual images to each food item
-                result.attachImages(from: uniqueFrames)
+                result.attachImages(from: imagesToAnalyze)
                 self.foodResults = result
                 self.foodLoggingState = .results
 
@@ -251,6 +276,17 @@ final class GlassesStreamManager: ObservableObject {
                             orientation: .up
                         )
                     }
+                }
+            }
+        }
+
+        // Listen for high-quality photo captures
+        photoListenerToken = streamSession.photoDataPublisher.listen { [weak self] photoData in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                if let image = UIImage(data: photoData.data) {
+                    self.capturedPhotos.append(image)
+                    NSLog("[FoodLog] photo captured! size=\(image.size), \(photoData.data.count / 1024)KB, total=\(self.capturedPhotos.count)")
                 }
             }
         }

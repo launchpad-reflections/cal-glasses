@@ -24,7 +24,7 @@ final class GeminiService {
 
         // Add images as base64
         for (i, image) in images.enumerated() {
-            guard let jpegData = image.jpegData(compressionQuality: 0.8) else { continue }
+            guard let jpegData = image.jpegData(compressionQuality: 0.92) else { continue }
             let base64 = jpegData.base64EncodedString()
             parts.append([
                 "inline_data": [
