@@ -2,6 +2,7 @@ import AVFoundation
 import CoreMedia
 import MWDATCamera
 import MWDATCore
+import Photos
 import SwiftUI
 
 /// Manages video/audio streaming from Meta glasses via MWDAT SDK.
@@ -26,11 +27,13 @@ final class GlassesStreamManager: ObservableObject {
         case recording(secondsLeft: Int)
         case processing
         case results
+        case saving
     }
 
     @Published private(set) var foodLoggingState: FoodLoggingState = .idle
     @Published private(set) var foodResults: FoodAnalysisResult?
     @Published private(set) var transcriptDuringRecording: String = ""
+    @Published private(set) var savedPhotoCount: Int = 0
 
     // MARK: - Dependencies
 
@@ -209,12 +212,30 @@ final class GlassesStreamManager: ObservableObject {
                 self.foodResults = result
                 self.foodLoggingState = .results
 
+                // Collect unique images from results
+                var uniqueImages: [UIImage] = []
+                var seenIndices = Set<Int>()
+                for item in result.items {
+                    if let img = item.image, let idx = item.bestImageIndex, !seenIndices.contains(idx) {
+                        uniqueImages.append(img)
+                        seenIndices.insert(idx)
+                    }
+                }
+                // If no specific images matched, use all analyzed images
+                if uniqueImages.isEmpty {
+                    uniqueImages = imagesToAnalyze
+                }
+
+                // Save unique food images to camera roll
+                let savedCount = await self.saveImagesToCameraRoll(uniqueImages)
+                self.savedPhotoCount = savedCount
+
                 // Announce results
                 let itemNames = result.items.map(\.name).joined(separator: ", ")
                 if result.items.isEmpty {
                     self.speaker.speak("No food detected.")
                 } else {
-                    self.speaker.speak("Found \(result.items.count) items: \(itemNames)")
+                    self.speaker.speak("Found \(result.items.count) items. Saved \(savedCount) photos.")
                 }
             } catch {
                 NSLog("[FoodLog] Gemini error: \(error)")
@@ -222,6 +243,34 @@ final class GlassesStreamManager: ObservableObject {
                 self.foodLoggingState = .idle
             }
         }
+    }
+
+    // MARK: - Camera Roll
+
+    /// Save images to the camera roll. Returns the number successfully saved.
+    private func saveImagesToCameraRoll(_ images: [UIImage]) async -> Int {
+        // Request photo library access if needed
+        let status = await PHPhotoLibrary.requestAuthorization(for: .addOnly)
+        guard status == .authorized || status == .limited else {
+            NSLog("[FoodLog] Photo library access denied: \(status.rawValue)")
+            return 0
+        }
+
+        var savedCount = 0
+        for (i, image) in images.enumerated() {
+            do {
+                try await PHPhotoLibrary.shared().performChanges {
+                    PHAssetChangeRequest.creationRequestForAsset(from: image)
+                }
+                savedCount += 1
+                NSLog("[FoodLog] saved photo \(i + 1)/\(images.count) to camera roll")
+            } catch {
+                NSLog("[FoodLog] failed to save photo \(i + 1): \(error)")
+            }
+        }
+
+        NSLog("[FoodLog] saved \(savedCount)/\(images.count) photos to camera roll")
+        return savedCount
     }
 
     /// Called by the view when coordinator.transcriptText changes during recording.

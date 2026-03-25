@@ -8,6 +8,8 @@
     <string>Camera access is needed to detect mouth movement for active speaker detection.</string>
     <key>NSMicrophoneUsageDescription</key>
     <string>Microphone access is needed for voice activity detection.</string>
+    <key>NSPhotoLibraryAddUsageDescription</key>
+    <string>Save food photos to your camera roll for Cal AI logging.</string>
     <key>NSBluetoothAlwaysUsageDescription</key>
     <string>Needed to connect to Meta Ray-Ban glasses.</string>
 
