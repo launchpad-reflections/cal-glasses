@@ -29,6 +29,7 @@
 		451968E12F72678500DCA269 /* FoodRecordingBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 451968DE2F72678500DCA269 /* FoodRecordingBuffer.swift */; };
 		451968E32F7267AB00DCA269 /* FoodAnalysisResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = 451968E22F7267AB00DCA269 /* FoodAnalysisResult.swift */; };
 		451968EB2F7268D100DCA269 /* GeminiService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 451968EA2F7268D100DCA269 /* GeminiService.swift */; };
+		451968ED2F744C1700DCA269 /* CalAITriggerService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 451968EC2F744C1700DCA269 /* CalAITriggerService.swift */; };
 		7171E3742F6F8F7B0034B4AA /* onnxruntime in Frameworks */ = {isa = PBXBuildFile; productRef = 7171E3732F6F8F7B0034B4AA /* onnxruntime */; };
 		7171E3762F6F8F7B0034B4AA /* onnxruntime_extensions in Frameworks */ = {isa = PBXBuildFile; productRef = 7171E3752F6F8F7B0034B4AA /* onnxruntime_extensions */; };
 		7171E3782F6F8FF10034B4AA /* silero_vad.onnx in Resources */ = {isa = PBXBuildFile; fileRef = 7171E3772F6F8FF10034B4AA /* silero_vad.onnx */; };
@@ -80,6 +81,7 @@
 		451968DF2F72678500DCA269 /* FrameDeduplicator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameDeduplicator.swift; sourceTree = "<group>"; };
 		451968E22F7267AB00DCA269 /* FoodAnalysisResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodAnalysisResult.swift; sourceTree = "<group>"; };
 		451968EA2F7268D100DCA269 /* GeminiService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeminiService.swift; sourceTree = "<group>"; };
+		451968EC2F744C1700DCA269 /* CalAITriggerService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalAITriggerService.swift; sourceTree = "<group>"; };
 		7171E3772F6F8FF10034B4AA /* silero_vad.onnx */ = {isa = PBXFileReference; lastKnownFileType = file; path = silero_vad.onnx; sourceTree = "<group>"; };
 		7171E3812F6FA8A70034B4AA /* TranscriptionProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptionProvider.swift; sourceTree = "<group>"; };
 		7171E3832F6FA8BE0034B4AA /* MoonshineTranscriber.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoonshineTranscriber.swift; sourceTree = "<group>"; };
@@ -163,6 +165,7 @@
 		451968E92F7268B800DCA269 /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				451968EC2F744C1700DCA269 /* CalAITriggerService.swift */,
 				451968EA2F7268D100DCA269 /* GeminiService.swift */,
 			);
 			path = Services;
@@ -399,6 +402,7 @@
 				451968E02F72678500DCA269 /* FrameDeduplicator.swift in Sources */,
 				451968E12F72678500DCA269 /* FoodRecordingBuffer.swift in Sources */,
 				7171E3822F6FA8A70034B4AA /* TranscriptionProvider.swift in Sources */,
+				451968ED2F744C1700DCA269 /* CalAITriggerService.swift in Sources */,
 				B10000010000000000000001 /* IdentifiedFace.swift in Sources */,
 				B10000020000000000000002 /* FaceGallery.swift in Sources */,
 				B10000030000000000000003 /* FaceDetectionProvider.swift in Sources */,

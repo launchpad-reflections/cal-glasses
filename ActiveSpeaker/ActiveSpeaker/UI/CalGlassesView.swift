@@ -226,6 +226,26 @@ private struct CalStreamView: View {
                                 .foregroundColor(.white)
                                 .clipShape(Capsule())
                         }
+
+                        // Debug: test Cal AI upload
+                        Button {
+                            Task {
+                                let ok = await CalAITriggerService.triggerUpload(count: 1)
+                                if ok {
+                                    streamVM.speaker.speak("Cal AI triggered")
+                                } else {
+                                    streamVM.speaker.speak("Cal AI server not reachable")
+                                }
+                            }
+                        } label: {
+                            Label("Test Cal AI", systemImage: "arrow.up.circle")
+                                .font(.caption)
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 10)
+                                .background(.orange)
+                                .foregroundColor(.white)
+                                .clipShape(Capsule())
+                        }
                     } else if streamVM.streamStatus == "Stopped" {
                         Button {
                             Task { await streamVM.startStreaming() }

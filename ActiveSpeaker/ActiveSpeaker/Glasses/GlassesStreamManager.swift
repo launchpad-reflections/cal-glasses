@@ -242,17 +242,19 @@ final class GlassesStreamManager: ObservableObject {
                 if result.items.isEmpty {
                     self.speaker.speak("No food detected.")
                 } else {
-                    self.speaker.speak("Found \(result.items.count) items. Saved \(savedCount) photos. Opening Cal AI.")
+                    // Determine how many photos to upload (use saved count, or unique image count as fallback)
+                    let uploadCount = savedCount > 0 ? savedCount : uniqueImages.count
+
+                    self.speaker.speak("Found \(result.items.count) items. Opening Cal AI.")
+                    NSLog("[FoodLog] triggering Cal AI automation for \(uploadCount) photos (saved=\(savedCount), unique=\(uniqueImages.count))")
 
                     // Trigger Appium automation on Mac to upload photos to Cal AI
-                    if savedCount > 0 {
-                        NSLog("[FoodLog] triggering Cal AI automation for \(savedCount) photos")
-                        let triggered = await CalAITriggerService.triggerUpload(count: savedCount)
-                        if triggered {
-                            NSLog("[FoodLog] Cal AI automation started")
-                        } else {
-                            NSLog("[FoodLog] Cal AI automation failed — is server.py running on Mac?")
-                        }
+                    let triggered = await CalAITriggerService.triggerUpload(count: uploadCount)
+                    if triggered {
+                        NSLog("[FoodLog] Cal AI automation started successfully")
+                    } else {
+                        NSLog("[FoodLog] Cal AI automation failed — is server.py running on Mac?")
+                        self.speaker.speak("Cal AI server not reachable")
                     }
                 }
             } catch {
