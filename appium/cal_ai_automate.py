@@ -122,7 +122,7 @@ def select_photo(driver, photo_number=0):
     return True
 
 
-def wait_and_keep_open(driver, seconds=40):
+def wait_and_keep_open(driver, seconds=10):
     """Keep Cal AI in foreground for a while."""
     driver.activate_app(CAL_AI_BUNDLE_ID)
     print(f"Keeping session open for {seconds} seconds...")
