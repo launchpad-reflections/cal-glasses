@@ -59,6 +59,10 @@ final class GlassesStreamManager: ObservableObject {
     private var recordingTimer: Timer?
     private var recordingSecondsLeft = 0
 
+    /// When true, use capturePhoto() for high-quality images.
+    /// When false, skip photo capture and use deduplicated stream frames instead.
+    static let DEFAULT_CAMERA = true
+
     // Photo capture: higher quality than stream frames
     private var capturedPhotos: [UIImage] = []
     private var photoListenerToken: AnyListenerToken?
@@ -148,16 +152,19 @@ final class GlassesStreamManager: ObservableObject {
         transcriptDuringRecording = ""
         foodResults = nil
 
-        NSLog("[FoodLog] recording started (with photo capture)")
-
-        // Capture a high-quality photo immediately and every 3 seconds
-        streamSession.capturePhoto(format: .jpeg)
-        photoCaptureTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { [weak self] _ in
-            Task { @MainActor [weak self] in
-                guard let self else { return }
-                self.streamSession.capturePhoto(format: .jpeg)
-                NSLog("[FoodLog] photo capture triggered")
+        if Self.DEFAULT_CAMERA {
+            NSLog("[FoodLog] recording started (with photo capture)")
+            // Capture a high-quality photo immediately and every 3 seconds
+            streamSession.capturePhoto(format: .jpeg)
+            photoCaptureTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { [weak self] _ in
+                Task { @MainActor [weak self] in
+                    guard let self else { return }
+                    self.streamSession.capturePhoto(format: .jpeg)
+                    NSLog("[FoodLog] photo capture triggered")
+                }
             }
+        } else {
+            NSLog("[FoodLog] recording started (stream frames only, DEFAULT_CAMERA=false)")
         }
 
         recordingTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
@@ -188,13 +195,13 @@ final class GlassesStreamManager: ObservableObject {
         transcriptDuringRecording = recording.transcript
         foodLoggingState = .processing
 
-        // Use captured photos if available (higher quality), fall back to stream frames
+        // Use captured photos if DEFAULT_CAMERA is on and photos exist, else stream frames
         let imagesToAnalyze: [UIImage]
-        if !capturedPhotos.isEmpty {
+        if Self.DEFAULT_CAMERA && !capturedPhotos.isEmpty {
             NSLog("[FoodLog] using \(capturedPhotos.count) captured photos (high quality)")
             imagesToAnalyze = capturedPhotos
         } else {
-            NSLog("[FoodLog] no photos captured, falling back to \(recording.frames.count) stream frames")
+            NSLog("[FoodLog] using \(recording.frames.count) stream frames (DEFAULT_CAMERA=\(Self.DEFAULT_CAMERA))")
             imagesToAnalyze = FrameDeduplicator.deduplicate(recording.frames)
         }
 
@@ -230,12 +237,23 @@ final class GlassesStreamManager: ObservableObject {
                 let savedCount = await self.saveImagesToCameraRoll(uniqueImages)
                 self.savedPhotoCount = savedCount
 
-                // Announce results
+                // Announce results and trigger Cal AI
                 let itemNames = result.items.map(\.name).joined(separator: ", ")
                 if result.items.isEmpty {
                     self.speaker.speak("No food detected.")
                 } else {
-                    self.speaker.speak("Found \(result.items.count) items. Saved \(savedCount) photos.")
+                    self.speaker.speak("Found \(result.items.count) items. Saved \(savedCount) photos. Opening Cal AI.")
+
+                    // Trigger Appium automation on Mac to upload photos to Cal AI
+                    if savedCount > 0 {
+                        NSLog("[FoodLog] triggering Cal AI automation for \(savedCount) photos")
+                        let triggered = await CalAITriggerService.triggerUpload(count: savedCount)
+                        if triggered {
+                            NSLog("[FoodLog] Cal AI automation started")
+                        } else {
+                            NSLog("[FoodLog] Cal AI automation failed — is server.py running on Mac?")
+                        }
+                    }
                 }
             } catch {
                 NSLog("[FoodLog] Gemini error: \(error)")
