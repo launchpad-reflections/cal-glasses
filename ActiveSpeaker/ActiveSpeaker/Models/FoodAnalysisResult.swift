@@ -6,8 +6,8 @@ struct FoodItem: Codable, Identifiable {
     let type: FoodItemType
     let quantity: String
     let portions: Double
-    let calories: Int?
-    let quantityMl: Int?
+    let calories: Double?
+    let quantityMl: Double?
     let hasNutritionLabel: Bool
     let needsManualEntry: Bool
     let confidence: Double
@@ -30,8 +30,8 @@ struct FoodItem: Codable, Identifiable {
         self.type = try container.decode(FoodItemType.self, forKey: .type)
         self.quantity = try container.decode(String.self, forKey: .quantity)
         self.portions = try container.decodeIfPresent(Double.self, forKey: .portions) ?? 1.0
-        self.calories = try container.decodeIfPresent(Int.self, forKey: .calories)
-        self.quantityMl = try container.decodeIfPresent(Int.self, forKey: .quantityMl)
+        self.calories = try container.decodeIfPresent(Double.self, forKey: .calories)
+        self.quantityMl = try container.decodeIfPresent(Double.self, forKey: .quantityMl)
         self.hasNutritionLabel = try container.decode(Bool.self, forKey: .hasNutritionLabel)
         self.needsManualEntry = try container.decode(Bool.self, forKey: .needsManualEntry)
         self.confidence = try container.decode(Double.self, forKey: .confidence)

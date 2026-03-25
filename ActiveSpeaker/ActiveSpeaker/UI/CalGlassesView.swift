@@ -375,7 +375,7 @@ private struct FoodItemCard: View {
                     }
                 }
                 if let cal = item.calories {
-                    Text("\(cal) cal")
+                    Text("\(Int(cal)) cal")
                         .font(.caption.bold())
                         .foregroundColor(.yellow)
                 }
@@ -440,10 +440,10 @@ private struct FoodItemDetailView: View {
                             DetailRow(label: "Quantity", value: item.quantity)
                             DetailRow(label: "Portions", value: String(format: "%.1f serving%@", item.portions, item.portions == 1.0 ? "" : "s"))
                             if let cal = item.calories {
-                                DetailRow(label: "Calories", value: "\(cal) cal (total)")
+                                DetailRow(label: "Calories", value: "\(Int(cal)) cal (total)")
                             }
                             if let ml = item.quantityMl {
-                                DetailRow(label: "Volume", value: "\(ml) ml")
+                                DetailRow(label: "Volume", value: "\(Int(ml)) ml")
                             }
                         }
 
