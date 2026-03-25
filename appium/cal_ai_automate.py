@@ -99,7 +99,12 @@ def upload_latest_photo():
                 print(f"✓ Cal AI is analyzing: {label}")
                 break
 
+        # Re-activate Cal AI so it stays in foreground after WDA disconnects
+        driver.activate_app(CAL_AI_BUNDLE_ID)
+
         print("\n✓ DONE — photo uploaded to Cal AI for analysis")
+        print("Keeping session open for 40 seconds...")
+        time.sleep(40)
         return True
 
     except Exception as e:
@@ -107,6 +112,7 @@ def upload_latest_photo():
         driver.save_screenshot("error.png")
         return False
     finally:
+        # Terminate WDA session without killing Cal AI
         driver.quit()
 
 
