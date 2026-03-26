@@ -17,7 +17,7 @@ Meta Glasses → capture photos → Gemini analyzes → save to camera roll → 
 
 ## Demo
 
-https://github.com/user-attachments/assets/placeholder
+https://x.com/mohul_shukla/status/2037226258459656246
 
 ## Requirements
 
