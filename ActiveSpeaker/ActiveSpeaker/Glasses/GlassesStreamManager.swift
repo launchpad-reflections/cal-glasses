@@ -61,7 +61,10 @@ final class GlassesStreamManager: ObservableObject {
 
     /// When true, use capturePhoto() for high-quality images.
     /// When false, skip photo capture and use deduplicated stream frames instead.
-    static let DEFAULT_CAMERA = true
+    static let DEFAULT_CAMERA = false
+
+    /// TEST mode: skip saving to camera roll, always trigger Cal AI with 2 photos (inclusive).
+    static let TEST = true
 
     // Photo capture: higher quality than stream frames
     private var capturedPhotos: [UIImage] = []
@@ -233,28 +236,44 @@ final class GlassesStreamManager: ObservableObject {
                     uniqueImages = imagesToAnalyze
                 }
 
-                // Save unique food images to camera roll
-                let savedCount = await self.saveImagesToCameraRoll(uniqueImages)
-                self.savedPhotoCount = savedCount
+                if Self.TEST {
+                    // TEST mode: skip camera roll save, always upload last 2 photos
+                    NSLog("[FoodLog] TEST mode: skipping camera roll save, triggering Cal AI with 2 photos")
+                    self.savedPhotoCount = 0
 
-                // Announce results and trigger Cal AI
-                let itemNames = result.items.map(\.name).joined(separator: ", ")
-                if result.items.isEmpty {
-                    self.speaker.speak("No food detected.")
-                } else {
-                    // Determine how many photos to upload (use saved count, or unique image count as fallback)
-                    let uploadCount = savedCount > 0 ? savedCount : uniqueImages.count
-
-                    self.speaker.speak("Found \(result.items.count) items. Opening Cal AI.")
-                    NSLog("[FoodLog] triggering Cal AI automation for \(uploadCount) photos (saved=\(savedCount), unique=\(uniqueImages.count))")
-
-                    // Trigger Appium automation on Mac to upload photos to Cal AI
-                    let triggered = await CalAITriggerService.triggerUpload(count: uploadCount)
-                    if triggered {
-                        NSLog("[FoodLog] Cal AI automation started successfully")
+                    let itemNames = result.items.map(\.name).joined(separator: ", ")
+                    if result.items.isEmpty {
+                        self.speaker.speak("No food detected.")
                     } else {
-                        NSLog("[FoodLog] Cal AI automation failed — is server.py running on Mac?")
-                        self.speaker.speak("Cal AI server not reachable")
+                        self.speaker.speak("Found \(result.items.count) items. Opening Cal AI.")
+                        let triggered = await CalAITriggerService.triggerUpload(count: 2)
+                        if triggered {
+                            NSLog("[FoodLog] Cal AI automation started (TEST mode, 2 photos)")
+                        } else {
+                            NSLog("[FoodLog] Cal AI automation failed — is server.py running on Mac?")
+                            self.speaker.speak("Cal AI server not reachable")
+                        }
+                    }
+                } else {
+                    // Normal mode: save to camera roll and trigger based on saved count
+                    let savedCount = await self.saveImagesToCameraRoll(uniqueImages)
+                    self.savedPhotoCount = savedCount
+
+                    let itemNames = result.items.map(\.name).joined(separator: ", ")
+                    if result.items.isEmpty {
+                        self.speaker.speak("No food detected.")
+                    } else {
+                        let uploadCount = savedCount > 0 ? savedCount : uniqueImages.count
+                        self.speaker.speak("Found \(result.items.count) items. Opening Cal AI.")
+                        NSLog("[FoodLog] triggering Cal AI automation for \(uploadCount) photos (saved=\(savedCount), unique=\(uniqueImages.count))")
+
+                        let triggered = await CalAITriggerService.triggerUpload(count: uploadCount)
+                        if triggered {
+                            NSLog("[FoodLog] Cal AI automation started successfully")
+                        } else {
+                            NSLog("[FoodLog] Cal AI automation failed — is server.py running on Mac?")
+                            self.speaker.speak("Cal AI server not reachable")
+                        }
                     }
                 }
             } catch {

@@ -19,6 +19,7 @@ sudo pymobiledevice3 remote start-tunnel
 **Why it's needed:** Without this tunnel, Appium can't find your device. The tunnel provides a TCP connection that WebDriverAgent uses to send/receive commands.
 
 **What happens when you run it:**
+
 1. Asks for your Mac password (needs root to create network interface)
 2. Your iPhone shows a "Trust" prompt (first time only)
 3. Creates a tunnel with an RSD address (e.g., `fd23:a87b:ac87::1:50787`)
@@ -33,12 +34,14 @@ appium
 **What it does:** Appium is a Node.js server that acts as a bridge between your Python script and the iPhone. It speaks the WebDriver protocol (same protocol used for browser automation like Selenium) and translates commands into iOS-specific actions via the XCUITest driver.
 
 **Architecture:**
+
 ```
 Python script → HTTP (WebDriver protocol) → Appium server (localhost:4723)
     → XCUITest Driver → WebDriverAgent (on iPhone) → iOS UI actions
 ```
 
 **What happens when you run it:**
+
 1. Loads the XCUITest driver plugin
 2. Starts an HTTP server on port 4723
 3. Waits for WebDriver session requests
@@ -59,25 +62,15 @@ Python script → HTTP (WebDriver protocol) → Appium server (localhost:4723)
 **What it does, step by step:**
 
 1. **Creates a WebDriver session** — connects to Appium at localhost:4723 with your device's UDID, team ID, and Cal AI's bundle ID (`com.viraldevelopment.CalAI`)
-
 2. **Appium launches Cal AI** — tells WDA on the phone to open Cal AI
-
 3. **Navigates to Home tab** — taps the "Home" button to ensure we're on the main screen
-
 4. **Taps the + button** — finds the floating action button (accessibility name: "plus", position: bottom-right at 311,760) and taps it. This opens a 4-option menu: Log exercise, Saved foods, Food Database, Scan food
-
 5. **Taps "Scan food"** — opens the camera view with tabs for Scan Food, Barcode, and Food label
-
 6. **Taps "Photo"** — switches from camera to photo library picker. This shows a grid of photos from the camera roll
-
 7. **Selects the first cell** — taps the first `XCUIElementTypeCell` in the photo grid, which is the most recent photo
-
 8. **Cal AI analyzes** — the app automatically starts analyzing the selected photo ("17%, Analyzing Image, We'll notify you when done!")
-
 9. **Re-activates Cal AI** — calls `activate_app()` to ensure Cal AI stays in the foreground
-
 10. **Waits 40 seconds** — keeps the session alive so Cal AI stays visible while it processes
-
 11. **Closes session** — `driver.quit()` ends the WebDriver session. Cal AI remains on the phone.
 
 ## How We Discovered the UI Flow
@@ -87,6 +80,7 @@ Python script → HTTP (WebDriver protocol) → Appium server (localhost:4723)
 We didn't know Cal AI's button labels, accessibility IDs, or navigation structure ahead of time. We discovered everything through systematic exploration:
 
 **Step 1: `explore` command** — Opened Cal AI and dumped every UI element:
+
 - Found 20 buttons with labels like "Home", "Progress", "Add", "Scan food"
 - Found the calorie/macro display buttons
 - Identified the tab bar structure
@@ -106,6 +100,7 @@ We didn't know Cal AI's button labels, accessibility IDs, or navigation structur
 ### Exploration Scripts Created
 
 During discovery, we wrote several one-off scripts:
+
 - `explore_step.py` — Initial UI dump + tap Scan food
 - `explore_add.py` — Test the "Add" button (turned out wrong)
 - `explore_plus.py` — Find the real + FAB with positions
@@ -127,6 +122,7 @@ APPIUM_SERVER = "http://localhost:4723"           # Appium server URL
 ```
 
 **How we found these:**
+
 - `DEVICE_UDID` — `xcrun xctrace list devices`
 - `TEAM_ID` — from Xcode project build settings (`DEVELOPMENT_TEAM`)
 - `CAL_AI_BUNDLE_ID` — `ideviceinstaller list | grep cal`
@@ -135,12 +131,13 @@ APPIUM_SERVER = "http://localhost:4723"           # Appium server URL
 
 Appium finds UI elements using several methods (fastest to slowest):
 
-| Strategy | Example | Speed |
-|----------|---------|-------|
-| Accessibility ID | `find_element(AppiumBy.ACCESSIBILITY_ID, "plus")` | Fastest |
-| iOS Class Chain | `find_element(AppiumBy.IOS_CLASS_CHAIN, "**/XCUIElementTypeButton[\`label == 'Photo'\`]")` | Fast |
-| Class Name | `find_elements(AppiumBy.CLASS_NAME, "XCUIElementTypeCell")` | Medium |
-| XPath | `find_element(AppiumBy.XPATH, "//XCUIElementTypeButton[@name='Add']")` | Slowest |
+
+| Strategy         | Example                                                                                    | Speed   |
+| ------------------ | -------------------------------------------------------------------------------------------- | --------- |
+| Accessibility ID | `find_element(AppiumBy.ACCESSIBILITY_ID, "plus")`                                          | Fastest |
+| iOS Class Chain  | `find_element(AppiumBy.IOS_CLASS_CHAIN, "**/XCUIElementTypeButton[\`label == 'Photo'\`]")` | Fast    |
+| Class Name       | `find_elements(AppiumBy.CLASS_NAME, "XCUIElementTypeCell")`                                | Medium  |
+| XPath            | `find_element(AppiumBy.XPATH, "//XCUIElementTypeButton[@name='Add']")`                     | Slowest |
 
 We use Accessibility ID for the + button ("plus") and iOS Class Chain for labeled buttons.
 
@@ -161,12 +158,20 @@ Before running the automation:
 ## Integration with Cal Reflections (Future)
 
 The end-to-end flow:
+
+
+| col1 | col2 | col3 |
+| ------ | ------ | ------ |
+|      |      |      |
+|      |      |      |
+
 ```
 Meta Glasses → capture food photo → Gemini analyzes → save best photo to camera roll
     → trigger Appium script → Cal AI receives photo → food logged automatically
 ```
 
 The glasses app would:
+
 1. Save the food photo to the iPhone's camera roll using `PHPhotoLibrary`
 2. Send an HTTP request to a local server on the Mac
 3. The Mac runs `python cal_ai_automate.py upload`

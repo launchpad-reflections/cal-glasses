@@ -105,10 +105,14 @@ final class GeminiService {
            - Estimated calories for the total amount consumed (if you can determine from label or general knowledge)
            - Whether a nutrition label is visible (if so, read it and summarize key nutrition facts)
            - Your confidence level (0.0 to 1.0)
-           - Which image (by index 0 to \(imageCount - 1)) best shows this food item — prefer the image with \
-             the nutrition label if one exists, otherwise the clearest view of the food
+           - Which image (by index 0 to \(imageCount - 1)) best shows this food item. Priority order: \
+             (1) an image where ONLY this item is visible (no other food), \
+             (2) an image showing the nutrition label for this item, \
+             (3) the clearest/closest view of the item. \
+             Strongly prefer images that isolate a single food item over images with multiple items.
         4. For water/drinks mentioned verbally but not shown, still include them (use best_image_index: null)
         5. Do NOT duplicate items — if the same food appears in multiple images, count it once
+        6. If the same image is the best match for multiple items, that's okay — but try to assign different images when possible
 
         The user's transcript during the recording:
         \"\(transcript.isEmpty ? "(no speech detected)" : transcript)\"

@@ -5,7 +5,9 @@ import Accelerate
 /// Groups similar frames and keeps the sharpest from each group.
 enum FrameDeduplicator {
 
-    /// Deduplicate an array of frames, returning 5-10 unique representative images.
+    /// Deduplicate an array of frames, returning 4-8 unique representative images.
+    static let minOutput = 4
+
     static func deduplicate(_ frames: [UIImage], maxOutput: Int = 8) -> [UIImage] {
         guard frames.count > maxOutput else { return frames }
 
@@ -42,8 +44,16 @@ enum FrameDeduplicator {
 
         // Sort by sharpness descending, take top maxOutput
         result.sort { $0.sharpness > $1.sharpness }
-        let output = Array(result.prefix(maxOutput).map(\.image))
-        NSLog("[FrameDedup] \(frames.count) frames → \(groups.count) groups → \(output.count) unique")
+        var output = Array(result.prefix(maxOutput).map(\.image))
+
+        // Ensure minimum of 4 images — if dedup was too aggressive,
+        // fill with evenly spaced frames from the original set
+        if output.count < minOutput && frames.count >= minOutput {
+            let step = frames.count / minOutput
+            output = (0..<minOutput).map { frames[$0 * step] }
+        }
+
+        NSLog("[FrameDedup] \(frames.count) frames → \(groups.count) groups → \(output.count) unique (min=\(minOutput))")
         return output
     }
 
